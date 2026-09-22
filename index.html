@@ -19,6 +19,8 @@
     top: 0; left: 0; right: 0;
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    gap: 8px;
     padding: 8px 16px;
     font-size: 16px;
     color: #222;
@@ -64,22 +66,19 @@
   .btn-dir[data-dir="izquierda"] { grid-area: izq; }
   .btn-dir[data-dir="derecha"]   { grid-area: der; }
 
-  /* ---------- CRÉDITOS ---------- */
+  /* ---------- CRÉDITOS (dentro del HUD) ---------- */
   #creditos {
-    position: fixed;
-    left: 16px;
-    bottom: 24px;
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 14px;
+    gap: 6px;
+    padding: 2px 10px;
     background: rgba(0,0,0,0.45);
     color: #fff;
-    border-radius: 10px;
-    font-size: 14px;
-    z-index: 20;
+    border-radius: 8px;
+    font-size: 13px;
     max-width: 55vw;
-    pointer-events: none;
+    white-space: nowrap;
+    overflow: hidden;
   }
   #creditos .etiqueta {
     font-weight: bold;
@@ -114,12 +113,10 @@
     object-fit: cover;
     min-height: 0;
   }
-  /* Imagen de derrota: se encaja completa, sin recortarse */
   #imgDerrota {
     object-fit: contain;
     background: #000;
   }
-  /* Pantalla de inicio: imagen encajada */
   #inicio img {
     object-fit: contain;
     background: #000;
@@ -145,6 +142,10 @@
 <body>
   <div id="hud">
     <span>PUNTOS: <b id="puntos">0</b></span>
+    <span id="creditos">
+      <span class="etiqueta">Las cacas:</span>
+      <span id="nombreRotando">Ariel Bernatene</span>
+    </span>
     <span>VIDAS: <b id="vidas">3</b></span>
   </div>
 
@@ -156,12 +157,6 @@
     <button class="btn-dir" data-dir="izquierda">◀</button>
     <button class="btn-dir" data-dir="derecha">▶</button>
     <button class="btn-dir" data-dir="abajo">▼</button>
-  </div>
-
-  <!-- Créditos "Las cacas" -->
-  <div id="creditos">
-    <span class="etiqueta">Las cacas:</span>
-    <span id="nombreRotando">Ariel Bernatene</span>
   </div>
 
   <!-- PANTALLA DE INICIO -->
@@ -554,7 +549,6 @@ function dibujar(ahora) {
   ctx.fillStyle = COLOR_FONDO;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Si todavía no hay jugador (pantalla de inicio), no dibujamos nada más
   if (!jugador) return;
 
   ctx.strokeStyle = COLOR_PARED;
@@ -701,8 +695,6 @@ setInterval(() => {
 }, INTERVALO_NOMBRE);
 
 // ---------- ARRANQUE ----------
-// Ya NO inicializamos el juego al cargar.
-// Solo preparamos el canvas y arrancamos el bucle de dibujo.
 ajustarCanvas();
 ultimoMs = performance.now();
 ultimoFrameMs = performance.now();
