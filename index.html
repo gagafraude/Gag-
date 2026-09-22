@@ -64,11 +64,12 @@
   .btn-dir[data-dir="izquierda"] { grid-area: izq; }
   .btn-dir[data-dir="derecha"]   { grid-area: der; }
 
-  /* ---------- CRÉDITOS ---------- */
+  /* ---------- CRÉDITOS (ahora arriba, centrado) ---------- */
   #creditos {
     position: fixed;
-    left: 16px;
-    bottom: 24px;
+    left: 50%;
+    top: 48px;
+    transform: translateX(-50%);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -78,8 +79,9 @@
     border-radius: 10px;
     font-size: 14px;
     z-index: 20;
-    max-width: 55vw;
+    max-width: 90vw;
     pointer-events: none;
+    white-space: nowrap;
   }
   #creditos .etiqueta {
     font-weight: bold;
@@ -114,7 +116,7 @@
     object-fit: cover;
     min-height: 0;
   }
-  /* Imagen de derrota: se encaja completa, sin recortarse */
+  /* Imagen de derrota: encajada, sin recortarse */
   #imgDerrota {
     object-fit: contain;
     background: #000;
@@ -153,7 +155,7 @@
     <button class="btn-dir" data-dir="abajo">▼</button>
   </div>
 
-  <!-- Créditos "Las cacas" -->
+  <!-- Créditos "Las cacas" (ahora arriba) -->
   <div id="creditos">
     <span class="etiqueta">Las cacas:</span>
     <span id="nombreRotando">Ariel Bernatene</span>
@@ -161,7 +163,7 @@
 
   <!-- Pantallas overlay -->
   <div id="derrota" class="overlay oculto">
-   <img id="imgDerrota" src="assets/derrota.png" alt="Perdiste">
+    <img id="imgDerrota" src="assets/cartel.png" alt="Perdiste">
     <div class="acciones">
       <button id="btnReiniciar" class="boton">REINICIAR</button>
     </div>
@@ -186,14 +188,10 @@ const ROWS = 16;
 const COLOR_FONDO = '#a9a9a9';
 const COLOR_PARED = '#3a3a3a';
 
-// Velocidades
 const VEL_JUGADOR = 1.5;
 const VEL_ENEMIGO = 0.9;
 
-// Tamaño de personajes
 const ESCALA_PERSONAJE = 2.5;
-
-// Margen de colisión con paredes (0 = pegado al borde)
 const MARGEN_PARED = 0;
 
 const PROB_CACA      = 0.5;
@@ -204,10 +202,7 @@ const ENEMIGOS_CADA  = 5000;
 const VIDAS_INI      = 3;
 const PUNTOS_CACA    = 10;
 
-// Zona central (columnas 3-6, filas 6-9) — bloqueo lógico
 const CENTRO = { c1: 3, c2: 6, r1: 6, r2: 9 };
-
-// Relación de aspecto del video central (1920×1080 = 16:9)
 const ASPECTO_CENTRO = 1920 / 1080;
 
 // ---------- CANVAS ----------
@@ -233,7 +228,7 @@ window.addEventListener('resize', ajustarCanvas);
 const imgJugador = new Image(); imgJugador.src = 'assets/jugador.png';
 const imgEnemigo = new Image(); imgEnemigo.src = 'assets/enemigo.png';
 const imgCaca    = new Image(); imgCaca.src    = 'assets/caca.png';
-const imgCara    = new Image(); imgCara.src    = 'assets/cara.png';   // ← power-up
+const imgCara    = new Image(); imgCara.src    = 'assets/cara.png';
 
 const audioMusica = new Audio('assets/musica.mp3');
 audioMusica.loop = true;
@@ -242,7 +237,6 @@ audioMusica.volume = 0.4;
 const audioComer = new Audio('assets/comer.mp3');
 audioComer.volume = 0.7;
 
-// 10 pedos
 const audiosPedo = [];
 for (let i = 1; i <= 10; i++) {
   const a = new Audio(`assets/pedo${i}.mp3`);
@@ -258,7 +252,6 @@ function reproducirPedo() {
   try { a.currentTime = 0; a.play(); } catch(e) {}
 }
 
-// Video del centro
 const videoCentro = document.createElement('video');
 videoCentro.src = 'assets/centro.mp4';
 videoCentro.loop = true;
@@ -294,7 +287,6 @@ function celdaDePixel(px, py) {
   };
 }
 
-// Calcula el rectángulo 16:9 del video central, centrado en la zona CENTRO
 function rectCentro() {
   const zonaX = OFFSET_X + CENTRO.c1 * CELL;
   const zonaY = OFFSET_Y + CENTRO.r1 * CELL;
@@ -319,7 +311,6 @@ function inicializar() {
   const p0 = centroCelda(Math.floor(COLS / 2), ROWS - 3);
   jugador = { x: p0.x, y: p0.y, dir: 'arriba', vel: VEL_JUGADOR, vivo: true };
 
-  // Cacas 50%
   cacas = [];
   for (let f = 0; f < ROWS; f++) {
     for (let c = 0; c < COLS; c++) {
@@ -332,7 +323,6 @@ function inicializar() {
     }
   }
 
-  // Caras (power-up)
   caras = [];
   let intentos = 0;
   while (caras.length < NUM_CARAS && intentos < 500) {
@@ -346,7 +336,6 @@ function inicializar() {
     caras.push({ x: p.x, y: p.y, recogida: false });
   }
 
-  // Enemigos (4 esquinas)
   enemigos = [];
   const esquinas = [
     centroCelda(1, 1),
@@ -401,7 +390,6 @@ document.querySelectorAll('.btn-dir').forEach(btn => {
   btn.addEventListener('mousedown', activar);
 });
 
-// Teclado
 window.addEventListener('keydown', e => {
   activarAudioUsuario();
   if (e.key === 'ArrowUp')    jugador.dir = 'arriba';
@@ -481,7 +469,6 @@ function actualizar(dt, ahora) {
     agregarEnemigoAleatorio();
   }
 
-  // Comer caca
   for (const c of cacas) {
     if (c.comida) continue;
     if (Math.hypot(c.x - jugador.x, c.y - jugador.y) < CELL * 0.7) {
@@ -492,7 +479,6 @@ function actualizar(dt, ahora) {
     }
   }
 
-  // Recoger cara (power-up)
   for (const c of caras) {
     if (c.recogida) continue;
     if (Math.hypot(c.x - jugador.x, c.y - jugador.y) < CELL * 0.7) {
@@ -540,7 +526,6 @@ function ganar() {
 }
 
 // ---------- RENDER ----------
-// Orden de filas sprite: arriba(0), derecha(1), abajo(2), izquierda(3)
 const FILA_DIR = { arriba: 0, derecha: 1, abajo: 2, izquierda: 3 };
 
 function dibujarSprite(img, ent, dir, frame, tamano = CELL) {
@@ -557,12 +542,10 @@ function dibujar(ahora) {
   ctx.fillStyle = COLOR_FONDO;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Contorno
   ctx.strokeStyle = COLOR_PARED;
   ctx.lineWidth = Math.max(4, CELL * 0.15);
   ctx.strokeRect(OFFSET_X, OFFSET_Y, CELL * COLS, CELL * ROWS);
 
-  // Video central en proporción 16:9
   const rect = rectCentro();
   if (videoCentro.readyState >= 2) {
     ctx.drawImage(videoCentro, rect.x, rect.y, rect.w, rect.h);
@@ -571,7 +554,6 @@ function dibujar(ahora) {
     ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
   }
 
-  // Cacas
   for (const c of cacas) {
     if (c.comida) continue;
     const s = CELL * 0.9;
@@ -583,7 +565,6 @@ function dibujar(ahora) {
     }
   }
 
-  // Caras (power-up)
   for (const c of caras) {
     if (c.recogida) continue;
     const s = CELL * 1.0;
@@ -597,7 +578,6 @@ function dibujar(ahora) {
 
   const tamPersonaje = CELL * ESCALA_PERSONAJE;
 
-  // Enemigos
   const paralizado = ahora < paralizadoHasta;
   for (const en of enemigos) {
     if (imgEnemigo.complete && imgEnemigo.naturalWidth > 0) {
@@ -612,7 +592,6 @@ function dibujar(ahora) {
     }
   }
 
-  // Jugador
   if (jugador.vivo) {
     if (imgJugador.complete && imgJugador.naturalWidth > 0)
       dibujarSprite(imgJugador, jugador, jugador.dir, frameJugador, tamPersonaje);
