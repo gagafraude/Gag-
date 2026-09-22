@@ -75,7 +75,7 @@
     background: rgba(0,0,0,0.45);
     color: #fff;
     border-radius: 8px;
-    font-size: 15px;
+    font-size: 22px;
     font-weight: bold;
     max-width: 70vw;
     white-space: nowrap;
@@ -123,7 +123,6 @@
     object-fit: contain;
     background: #000;
   }
-  /* Video de victoria: encajado sin recortarse */
   #vidVictoria {
     object-fit: contain;
     background: #000;
@@ -148,12 +147,12 @@
 </head>
 <body>
   <div id="hud">
-    <span>PUNTOS: <b id="p">0</b></span>
+    <span><b id="puntos">0</b></span>
     <span id="creditos">
-      <span class="etiqueta">Cacas:</span>
+      <span class="etiqueta">Las cacas:</span>
       <span id="nombreRotando">Ariel Bernatene</span>
     </span>
-    <span>VIDAS: <b id="v">3</b></span>
+    <span><b id="vidas">3</b></span>
   </div>
 
   <canvas id="juego"></canvas>
@@ -191,7 +190,7 @@
 
 <script>
 // ============================================================
-//  COME CACA 
+//  COME CACA — juego estilo Pac-Man vertical
 // ============================================================
 
 // ---------- CONFIGURACIÓN ----------
@@ -250,7 +249,6 @@ audioMusica.volume = 0.4;
 const audioComer = new Audio('assets/comer.mp3');
 audioComer.volume = 0.7;
 
-// Sonido al tocar una cara (power-up)
 const audioCaja = new Audio('assets/caja.mp3');
 audioCaja.volume = 0.7;
 
@@ -269,11 +267,9 @@ function reproducirPedo() {
   try { a.currentTime = 0; a.play(); } catch(e) {}
 }
 
-// Sonido cuando un enemigo toca al jugador
 const audioMuerte = new Audio('assets/muerte.mp3');
 audioMuerte.volume = 0.7;
 
-// Sonido al mostrarse la pantalla de derrota (sin vidas)
 const audioPedoLargo = new Audio('assets/pedo-largo.mp3');
 audioPedoLargo.volume = 0.7;
 
@@ -510,7 +506,6 @@ function actualizar(dt, ahora) {
     if (Math.hypot(c.x - jugador.x, c.y - jugador.y) < CELL * 0.7) {
       c.recogida = true;
       paralizadoHasta = ahora + CARAS_PARALIZA;
-      // Sonido al tocar la cara
       try { audioCaja.currentTime = 0; audioCaja.play(); } catch(e){}
     }
   }
@@ -532,10 +527,8 @@ function perderVida() {
   vidas--;
   document.getElementById('vidas').textContent = vidas;
 
-  // 1) Sonido de muerte SIEMPRE que un enemigo lo toca
   try { audioMuerte.currentTime = 0; audioMuerte.play(); } catch(e){}
 
-  // 2) Si se queda sin vidas, mostrar pantalla de derrota + pedo largo
   if (vidas <= 0) {
     juegoActivo = false;
     audioMusica.pause();
@@ -544,7 +537,6 @@ function perderVida() {
     return;
   }
 
-  // 3) Si todavía tiene vidas, reposicionar al jugador
   const p = centroCelda(Math.floor(COLS / 2), ROWS - 3);
   jugador.x = p.x;
   jugador.y = p.y;
@@ -554,20 +546,16 @@ function perderVida() {
 function ganar() {
   juegoActivo = false;
 
-  // Cortar música de fondo
   audioMusica.pause();
   audioMusica.currentTime = 0;
 
-  // Cortar sonidos que puedan estar sonando
   audioMuerte.pause();      audioMuerte.currentTime = 0;
   audioPedoLargo.pause();   audioPedoLargo.currentTime = 0;
   audioCaja.pause();        audioCaja.currentTime = 0;
 
-  // Mostrar overlay de victoria
   const vid = document.getElementById('vidVictoria');
   document.getElementById('victoria').classList.remove('oculto');
 
-  // Reproducir video con su audio propio
   vid.currentTime = 0;
   vid.volume = 1.0;
   vid.muted = false;
@@ -715,7 +703,7 @@ const NOMBRES = [
   'Ivana Vescovi',
   'Jonatan Jara',
   'Kiara Bustamante',
-  'Facundo Guzman ',
+  'Guzman Facundo',
   'Echenique Lucía',
   'Cintia Lemarchand',
   'Rita Larroulet',
