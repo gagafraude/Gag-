@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Come Caca</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    height: 100%;
+    background: #a9a9a9;
+    font-family: system-ui, sans-serif;
+    overflow: hidden;
+    user-select: none;
+    touch-action: none;
+  }
+  #hud {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 16px;
+    font-size: 16px;
+    color: #222;
+    z-index: 10;
+    background: rgba(255,255,255,0.4);
+  }
+  #juego {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    touch-action: none;
+  }
+
+  /* ---------- D-PAD ---------- */
+  #dpad {
+    position: fixed;
+    right: 16px;
+    bottom: 24px;
+    width: 170px;
+    height: 170px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    grid-template-areas:
+      ".  arriba  ."
+      "izq .    der"
+      ".  abajo   .";
+    gap: 4px;
+    z-index: 20;
+  }
+  .btn-dir {
+    background: rgba(0,0,0,0.35);
+    border: none;
+    color: #fff;
+    font-size: 22px;
+    border-radius: 10px;
+    touch-action: none;
+    user-select: none;
+  }
+  .btn-dir:active { background: rgba(0,0,0,0.6); }
+  .btn-dir[data-dir="arriba"]    { grid-area: arriba; }
+  .btn-dir[data-dir="abajo"]     { grid-area: abajo; }
+  .btn-dir[data-dir="izquierda"] { grid-area: izq; }
+  .btn-dir[data-dir="derecha"]   { grid-area: der; }
+
+  /* ---------- CRÉDITOS ---------- */
+  #creditos {
+    position: fixed;
+    left: 16px;
+    bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: rgba(0,0,0,0.45);
+    color: #fff;
+    border-radius: 10px;
+    font-size: 14px;
+    z-index: 20;
+    max-width: 55vw;
+    pointer-events: none;
+  }
+  #creditos .etiqueta {
+    font-weight: bold;
+    white-space: nowrap;
+    opacity: 0.85;
+  }
+  #nombreRotando {
+    display: inline-block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    animation: aparecer 0.6s ease;
+  }
+  @keyframes aparecer {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- OVERLAYS ---------- */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+  }
+  .overlay.oculto { display: none; }
+  .overlay img, .overlay video {
+    flex: 1;
+    width: 100%;
+    object-fit: cover;
+    min-height: 0;
+  }
+  /* Imagen de derrota: se encaja completa, sin recortarse */
+  #imgDerrota {
+    object-fit: contain;
+    background: #000;
+  }
+  .acciones {
+    background: #111;
+    padding: 12px;
+    display: flex;
+    justify-content: center;
+  }
+  .boton {
+    padding: 14px 40px;
+    font-size: 20px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    background: #c0392b;
+    color: #fff;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <div id="hud">
+    <span>PUNTOS: <b id="puntos">0</b></span>
+    <span>VIDAS: <b id="vidas">3</b></span>
+  </div>
+
+  <canvas id="juego"></canvas>
+
+  <!-- Controles táctiles -->
+  <div id="dpad">
+    <button class="btn-dir" data-dir="arriba">▲</button>
+    <button class="btn-dir" data-dir="izquierda">◀</button>
+    <button class="btn-dir" data-dir="derecha">▶</button>
+    <button class="btn-dir" data-dir="abajo">▼</button>
+  </div>
+
+  <!-- Créditos "Las cacas" -->
+  <div id="creditos">
+    <span class="etiqueta">Las cacas:</span>
+    <span id="nombreRotando">Ariel Bernatene</span>
+  </div>
+
+  <!-- Pantallas overlay -->
+  <div id="derrota" class="overlay oculto">
+   <img id="imgDerrota" src="assets/derrota.png" alt="Perdiste">
+    <div class="acciones">
+      <button id="btnReiniciar" class="boton">REINICIAR</button>
+    </div>
+  </div>
+
+  <div id="victoria" class="overlay oculto">
+    <video id="vidVictoria" src="assets/victoria.mp4" autoplay loop muted playsinline></video>
+    <div class="acciones">
+      <button id="btnSiguiente" class="boton">JUGAR OTRA VEZ</button>
+    </div>
+  </div>
+
+<script>
+// ============================================================
+//  COME CACA — juego estilo Pac-Man vertical
+// ============================================================
+
+// ---------- CONFIGURACIÓN ----------
+const COLS = 10;
+const ROWS = 16;
+
+const COLOR_FONDO = '#a9a9a9';
+const COLOR_PARED = '#3a3a3a';
+
+// Velocidades
+const VEL_JUGADOR = 1.5;
+const VEL_ENEMIGO = 0.9;
+
+// Tamaño de personajes
+const ESCALA_PERSONAJE = 2.5;
+
+// Margen de colisión con paredes (0 = pegado al borde)
+const MARGEN_PARED = 0;
+
+const PROB_CACA      = 0.5;
+const NUM_CARAS      = 4;
+const CARAS_PARALIZA = 3000;
+const ENEMIGOS_INI   = 4;
+const ENEMIGOS_CADA  = 5000;
+const VIDAS_INI      = 3;
+const PUNTOS_CACA    = 10;
+
+// Zona central (columnas 3-6, filas 6-9) — bloqueo lógico
+const CENTRO = { c1: 3, c2: 6, r1: 6, r2: 9 };
+
+// Relación de aspecto del video central (1920×1080 = 16:9)
+const ASPECTO_CENTRO = 1920 / 1080;
+
+// ---------- CANVAS ----------
+const canvas = document.getElementById('juego');
+const ctx = canvas.getContext('2d');
+
+let CELL = 0, OFFSET_X = 0, OFFSET_Y = 0;
+
+function ajustarCanvas() {
+  const w = window.innerWidth;
+  const h = window.innerHeight - 40;
+  canvas.width  = w;
+  canvas.height = h;
+  const cellW = w / COLS;
+  const cellH = h / ROWS;
+  CELL = Math.floor(Math.min(cellW, cellH));
+  OFFSET_X = Math.floor((w - CELL * COLS) / 2);
+  OFFSET_Y = Math.floor((h - CELL * ROWS) / 2) + 20;
+}
+window.addEventListener('resize', ajustarCanvas);
+
+// ---------- RECURSOS ----------
+const imgJugador = new Image(); imgJugador.src = 'assets/jugador.png';
+const imgEnemigo = new Image(); imgEnemigo.src = 'assets/enemigo.png';
+const imgCaca    = new Image(); imgCaca.src    = 'assets/caca.png';
+const imgCara    = new Image(); imgCara.src    = 'assets/cara.png';   // ← power-up
+
+const audioMusica = new Audio('assets/musica.mp3');
+audioMusica.loop = true;
+audioMusica.volume = 0.4;
+
+const audioComer = new Audio('assets/comer.mp3');
+audioComer.volume = 0.7;
+
+// 10 pedos
+const audiosPedo = [];
+for (let i = 1; i <= 10; i++) {
+  const a = new Audio(`assets/pedo${i}.mp3`);
+  a.volume = 0.5;
+  audiosPedo.push(a);
+}
+let ultimoPedoMs = 0;
+function reproducirPedo() {
+  const ahora = performance.now();
+  if (ahora - ultimoPedoMs < 180) return;
+  ultimoPedoMs = ahora;
+  const a = audiosPedo[Math.floor(Math.random() * audiosPedo.length)];
+  try { a.currentTime = 0; a.play(); } catch(e) {}
+}
+
+// Video del centro
+const videoCentro = document.createElement('video');
+videoCentro.src = 'assets/centro.mp4';
+videoCentro.loop = true;
+videoCentro.muted = true;
+videoCentro.playsInline = true;
+videoCentro.autoplay = true;
+videoCentro.play().catch(()=>{});
+
+// ---------- ESTADO ----------
+let jugador, enemigos, cacas, caras, puntos, vidas, paralizadoHasta, ultimoEnemigo, juegoActivo;
+let frameJugador = 0, frameEnemigo = 0;
+let ultimoFrameMs = 0;
+let ultimoMs = 0;
+let pasoAcumulado = 0;
+
+// ---------- UTILIDADES ----------
+function esCentro(col, fila) {
+  return col >= CENTRO.c1 && col <= CENTRO.c2 && fila >= CENTRO.r1 && fila <= CENTRO.r2;
+}
+function esBorde(col, fila) {
+  return col === 0 || col === COLS - 1 || fila === 0 || fila === ROWS - 1;
+}
+function esBloque(col, fila) { return esBorde(col, fila) || esCentro(col, fila); }
+function celdaLibre(col, fila) { return !esBloque(col, fila); }
+
+function centroCelda(col, fila) {
+  return { x: OFFSET_X + (col + 0.5) * CELL, y: OFFSET_Y + (fila + 0.5) * CELL };
+}
+function celdaDePixel(px, py) {
+  return {
+    col: Math.floor((px - OFFSET_X) / CELL),
+    fila: Math.floor((py - OFFSET_Y) / CELL)
+  };
+}
+
+// Calcula el rectángulo 16:9 del video central, centrado en la zona CENTRO
+function rectCentro() {
+  const zonaX = OFFSET_X + CENTRO.c1 * CELL;
+  const zonaY = OFFSET_Y + CENTRO.r1 * CELL;
+  const zonaW = (CENTRO.c2 - CENTRO.c1 + 1) * CELL;
+  const zonaH = (CENTRO.r2 - CENTRO.r1 + 1) * CELL;
+
+  let w = zonaW;
+  let h = w / ASPECTO_CENTRO;
+  if (h > zonaH) {
+    h = zonaH;
+    w = h * ASPECTO_CENTRO;
+  }
+  const x = zonaX + (zonaW - w) / 2;
+  const y = zonaY + (zonaH - h) / 2;
+  return { x, y, w, h };
+}
+
+// ---------- INICIALIZACIÓN ----------
+function inicializar() {
+  ajustarCanvas();
+
+  const p0 = centroCelda(Math.floor(COLS / 2), ROWS - 3);
+  jugador = { x: p0.x, y: p0.y, dir: 'arriba', vel: VEL_JUGADOR, vivo: true };
+
+  // Cacas 50%
+  cacas = [];
+  for (let f = 0; f < ROWS; f++) {
+    for (let c = 0; c < COLS; c++) {
+      if (!celdaLibre(c, f)) continue;
+      if (c === Math.floor(COLS/2) && f === ROWS - 3) continue;
+      if (Math.random() < PROB_CACA) {
+        const p = centroCelda(c, f);
+        cacas.push({ x: p.x, y: p.y, comida: false });
+      }
+    }
+  }
+
+  // Caras (power-up)
+  caras = [];
+  let intentos = 0;
+  while (caras.length < NUM_CARAS && intentos < 500) {
+    intentos++;
+    const c = 1 + Math.floor(Math.random() * (COLS - 2));
+    const f = 1 + Math.floor(Math.random() * (ROWS - 2));
+    if (!celdaLibre(c, f)) continue;
+    const p = centroCelda(c, f);
+    if (Math.hypot(p.x - jugador.x, p.y - jugador.y) < CELL * 3) continue;
+    if (caras.some(ca => Math.hypot(ca.x - p.x, ca.y - p.y) < CELL)) continue;
+    caras.push({ x: p.x, y: p.y, recogida: false });
+  }
+
+  // Enemigos (4 esquinas)
+  enemigos = [];
+  const esquinas = [
+    centroCelda(1, 1),
+    centroCelda(COLS - 2, 1),
+    centroCelda(1, ROWS - 2),
+    centroCelda(COLS - 2, ROWS - 2)
+  ];
+  for (let i = 0; i < ENEMIGOS_INI; i++) {
+    enemigos.push({ x: esquinas[i].x, y: esquinas[i].y, dir: 'abajo', vel: VEL_ENEMIGO });
+  }
+
+  puntos = 0;
+  vidas = VIDAS_INI;
+  paralizadoHasta = 0;
+  ultimoEnemigo = performance.now();
+  juegoActivo = true;
+  pasoAcumulado = 0;
+
+  document.getElementById('puntos').textContent = puntos;
+  document.getElementById('vidas').textContent = vidas;
+  document.getElementById('derrota').classList.add('oculto');
+  document.getElementById('victoria').classList.add('oculto');
+
+  audioMusica.currentTime = 0;
+  audioMusica.play().catch(() => {});
+}
+
+// ---------- APARICIÓN DE ENEMIGOS ----------
+function agregarEnemigoAleatorio() {
+  const candidatos = [];
+  for (let c = 1; c < COLS - 1; c++)
+    for (let f = 1; f < ROWS - 1; f++)
+      if (celdaLibre(c, f)) candidatos.push({ c, f });
+  if (!candidatos.length) return;
+  const e = candidatos[Math.floor(Math.random() * candidatos.length)];
+  const p = centroCelda(e.c, e.f);
+  enemigos.push({ x: p.x, y: p.y, dir: 'abajo', vel: VEL_ENEMIGO });
+}
+
+// ---------- INPUT ----------
+function activarAudioUsuario() {
+  if (audioMusica.paused) audioMusica.play().catch(()=>{});
+}
+document.querySelectorAll('.btn-dir').forEach(btn => {
+  const dir = btn.dataset.dir;
+  const activar = (ev) => {
+    ev.preventDefault();
+    activarAudioUsuario();
+    if (jugador) jugador.dir = dir;
+  };
+  btn.addEventListener('touchstart', activar, { passive: false });
+  btn.addEventListener('mousedown', activar);
+});
+
+// Teclado
+window.addEventListener('keydown', e => {
+  activarAudioUsuario();
+  if (e.key === 'ArrowUp')    jugador.dir = 'arriba';
+  if (e.key === 'ArrowDown')  jugador.dir = 'abajo';
+  if (e.key === 'ArrowLeft')  jugador.dir = 'izquierda';
+  if (e.key === 'ArrowRight') jugador.dir = 'derecha';
+});
+
+// ---------- MOVIMIENTO ----------
+function moverEntidad(ent, dt) {
+  const dx = (ent.dir === 'derecha' ? 1 : ent.dir === 'izquierda' ? -1 : 0) * ent.vel * dt;
+  const dy = (ent.dir === 'abajo'   ? 1 : ent.dir === 'arriba'    ? -1 : 0) * ent.vel * dt;
+  let movido = 0;
+
+  if (dx !== 0) {
+    const nuevaX = ent.x + dx;
+    const celda = celdaDePixel(nuevaX + Math.sign(dx) * CELL * MARGEN_PARED, ent.y);
+    if (celdaLibre(celda.col, celda.fila)) { ent.x = nuevaX; movido += Math.abs(dx); }
+    else {
+      const al = celdaDePixel(ent.x, ent.y);
+      ent.x = centroCelda(al.col, al.fila).x;
+    }
+  }
+  if (dy !== 0) {
+    const nuevaY = ent.y + dy;
+    const celda = celdaDePixel(ent.x, nuevaY + Math.sign(dy) * CELL * MARGEN_PARED);
+    if (celdaLibre(celda.col, celda.fila)) { ent.y = nuevaY; movido += Math.abs(dy); }
+    else {
+      const al = celdaDePixel(ent.x, ent.y);
+      ent.y = centroCelda(al.col, al.fila).y;
+    }
+  }
+  return movido;
+}
+
+// ---------- IA ----------
+function moverEnemigoIA(en, dt) {
+  const celda = celdaDePixel(en.x, en.y);
+  const cx = centroCelda(celda.col, celda.fila).x;
+  const cy = centroCelda(celda.col, celda.fila).y;
+  const alX = Math.abs(en.x - cx) < 2;
+  const alY = Math.abs(en.y - cy) < 2;
+
+  if (alX && alY) {
+    const dx = jugador.x - en.x;
+    const dy = jugador.y - en.y;
+    const opciones = [];
+    if (Math.abs(dx) > Math.abs(dy)) {
+      opciones.push(dx > 0 ? 'derecha' : 'izquierda');
+      opciones.push(dy > 0 ? 'abajo' : 'arriba');
+    } else {
+      opciones.push(dy > 0 ? 'abajo' : 'arriba');
+      opciones.push(dx > 0 ? 'derecha' : 'izquierda');
+    }
+    const deltas = { arriba:[0,-1], abajo:[0,1], izquierda:[-1,0], derecha:[1,0] };
+    for (const dir of opciones) {
+      const d = deltas[dir];
+      if (celdaLibre(celda.col + d[0], celda.fila + d[1])) { en.dir = dir; break; }
+    }
+  }
+  moverEntidad(en, dt);
+}
+
+// ---------- UPDATE ----------
+function actualizar(dt, ahora) {
+  if (!juegoActivo) return;
+
+  const movido = moverEntidad(jugador, dt);
+  pasoAcumulado += movido;
+  if (pasoAcumulado >= CELL * 0.5) {
+    pasoAcumulado = 0;
+    reproducirPedo();
+  }
+
+  if (ahora - ultimoEnemigo >= ENEMIGOS_CADA) {
+    ultimoEnemigo = ahora;
+    agregarEnemigoAleatorio();
+  }
+
+  // Comer caca
+  for (const c of cacas) {
+    if (c.comida) continue;
+    if (Math.hypot(c.x - jugador.x, c.y - jugador.y) < CELL * 0.7) {
+      c.comida = true;
+      puntos += PUNTOS_CACA;
+      document.getElementById('puntos').textContent = puntos;
+      try { audioComer.currentTime = 0; audioComer.play(); } catch(e){}
+    }
+  }
+
+  // Recoger cara (power-up)
+  for (const c of caras) {
+    if (c.recogida) continue;
+    if (Math.hypot(c.x - jugador.x, c.y - jugador.y) < CELL * 0.7) {
+      c.recogida = true;
+      paralizadoHasta = ahora + CARAS_PARALIZA;
+    }
+  }
+
+  const paralizado = ahora < paralizadoHasta;
+  if (!paralizado) for (const en of enemigos) moverEnemigoIA(en, dt);
+
+  for (const en of enemigos) {
+    if (Math.hypot(en.x - jugador.x, en.y - jugador.y) < CELL * 0.8) {
+      perderVida();
+      return;
+    }
+  }
+
+  if (cacas.every(c => c.comida)) ganar();
+}
+
+function perderVida() {
+  vidas--;
+  document.getElementById('vidas').textContent = vidas;
+  reproducirPedo();
+  if (vidas <= 0) {
+    juegoActivo = false;
+    audioMusica.pause();
+    document.getElementById('derrota').classList.remove('oculto');
+    return;
+  }
+  const p = centroCelda(Math.floor(COLS / 2), ROWS - 3);
+  jugador.x = p.x;
+  jugador.y = p.y;
+  jugador.dir = 'arriba';
+}
+
+function ganar() {
+  juegoActivo = false;
+  audioMusica.pause();
+  const vid = document.getElementById('vidVictoria');
+  vid.currentTime = 0;
+  vid.play().catch(()=>{});
+  document.getElementById('victoria').classList.remove('oculto');
+}
+
+// ---------- RENDER ----------
+// Orden de filas sprite: arriba(0), derecha(1), abajo(2), izquierda(3)
+const FILA_DIR = { arriba: 0, derecha: 1, abajo: 2, izquierda: 3 };
+
+function dibujarSprite(img, ent, dir, frame, tamano = CELL) {
+  const filaDir = FILA_DIR[dir] ?? 2;
+  const sw = img.width / 4;
+  const sh = img.height / 4;
+  const sx = frame * sw;
+  const sy = filaDir * sh;
+  ctx.drawImage(img, sx, sy, sw, sh,
+    ent.x - tamano / 2, ent.y - tamano / 2, tamano, tamano);
+}
+
+function dibujar(ahora) {
+  ctx.fillStyle = COLOR_FONDO;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Contorno
+  ctx.strokeStyle = COLOR_PARED;
+  ctx.lineWidth = Math.max(4, CELL * 0.15);
+  ctx.strokeRect(OFFSET_X, OFFSET_Y, CELL * COLS, CELL * ROWS);
+
+  // Video central en proporción 16:9
+  const rect = rectCentro();
+  if (videoCentro.readyState >= 2) {
+    ctx.drawImage(videoCentro, rect.x, rect.y, rect.w, rect.h);
+  } else {
+    ctx.fillStyle = COLOR_PARED;
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+  }
+
+  // Cacas
+  for (const c of cacas) {
+    if (c.comida) continue;
+    const s = CELL * 0.9;
+    if (imgCaca.complete && imgCaca.naturalWidth > 0)
+      ctx.drawImage(imgCaca, c.x - s/2, c.y - s/2, s, s);
+    else {
+      ctx.fillStyle = '#6b3e1e';
+      ctx.beginPath(); ctx.arc(c.x, c.y, s/2, 0, Math.PI*2); ctx.fill();
+    }
+  }
+
+  // Caras (power-up)
+  for (const c of caras) {
+    if (c.recogida) continue;
+    const s = CELL * 1.0;
+    if (imgCara.complete && imgCara.naturalWidth > 0)
+      ctx.drawImage(imgCara, c.x - s/2, c.y - s/2, s, s);
+    else {
+      ctx.fillStyle = '#f1c40f';
+      ctx.beginPath(); ctx.arc(c.x, c.y, s/2, 0, Math.PI*2); ctx.fill();
+    }
+  }
+
+  const tamPersonaje = CELL * ESCALA_PERSONAJE;
+
+  // Enemigos
+  const paralizado = ahora < paralizadoHasta;
+  for (const en of enemigos) {
+    if (imgEnemigo.complete && imgEnemigo.naturalWidth > 0) {
+      dibujarSprite(imgEnemigo, en, en.dir, frameEnemigo, tamPersonaje);
+    } else {
+      ctx.fillStyle = paralizado ? '#3498db' : '#c0392b';
+      ctx.beginPath(); ctx.arc(en.x, en.y, tamPersonaje * 0.4, 0, Math.PI*2); ctx.fill();
+    }
+    if (paralizado) {
+      ctx.fillStyle = 'rgba(60,120,255,0.5)';
+      ctx.beginPath(); ctx.arc(en.x, en.y, tamPersonaje * 0.45, 0, Math.PI*2); ctx.fill();
+    }
+  }
+
+  // Jugador
+  if (jugador.vivo) {
+    if (imgJugador.complete && imgJugador.naturalWidth > 0)
+      dibujarSprite(imgJugador, jugador, jugador.dir, frameJugador, tamPersonaje);
+    else {
+      ctx.fillStyle = '#f39c12';
+      ctx.beginPath(); ctx.arc(jugador.x, jugador.y, tamPersonaje * 0.4, 0, Math.PI*2); ctx.fill();
+    }
+  }
+}
+
+// ---------- BUCLE ----------
+function bucle(ahora) {
+  const dtSeg = Math.min((ahora - ultimoMs) / 1000, 0.05);
+  ultimoMs = ahora;
+  const dt = dtSeg * 60;
+
+  if (ahora - ultimoFrameMs > 120) {
+    frameJugador = (frameJugador + 1) % 4;
+    frameEnemigo = (frameEnemigo + 1) % 4;
+    ultimoFrameMs = ahora;
+  }
+
+  actualizar(dt, ahora);
+  dibujar(ahora);
+  requestAnimationFrame(bucle);
+}
+
+// ---------- BOTONES ----------
+document.getElementById('btnReiniciar').addEventListener('click', () => {
+  inicializar();
+  ultimoMs = performance.now();
+});
+document.getElementById('btnSiguiente').addEventListener('click', () => {
+  inicializar();
+  ultimoMs = performance.now();
+});
+
+// ---------- ROTADOR DE NOMBRES ----------
+const NOMBRES = [
+  'Ariel Bernatene',
+  'María Larrarte',
+  'Susana Rinne',
+  'Gustavo Marin',
+  'Silvana Calicchia',
+  'Pia Vivet',
+  'Gaston Santamaria',
+  'Carina Flores',
+  'Ivana Vescovi',
+  'Jonatan Jara',
+  'Kiara Bustamante',
+  'Guzman Facundo',
+  'Echenique Lucía',
+  'Cintia Lemarchand',
+  'Rita Larroulet',
+  'Gustavo Lesgart',
+  'Sergio Nova',
+  'Fabián Poblete',
+  'Claudia Galera',
+  'Leonardo Alvarez',
+  'Gabriela Gorosito',
+  'Albano Boj',
+  'María Zgaib',
+  'Pablo Chafrat',
+  'Claudia Solis',
+  'Micaela Arias',
+  'Fanello Mariano',
+  'Magdalena Aguirre',
+  'Walter Ocaña',
+  'Silvia Karina Churin'
+];
+
+const elNombre = document.getElementById('nombreRotando');
+let idxNombre = 0;
+const INTERVALO_NOMBRE = 2500;
+
+setInterval(() => {
+  idxNombre = (idxNombre + 1) % NOMBRES.length;
+  elNombre.textContent = NOMBRES[idxNombre];
+  elNombre.style.animation = 'none';
+  void elNombre.offsetWidth;
+  elNombre.style.animation = 'aparecer 0.6s ease';
+}, INTERVALO_NOMBRE);
+
+// ---------- ARRANQUE ----------
+ajustarCanvas();
+inicializar();
+ultimoMs = performance.now();
+requestAnimationFrame(bucle);
+</script>
+</body>
+</html>
