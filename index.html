@@ -71,13 +71,13 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 4px 12px;
+    padding: 4px 14px;
     background: rgba(0,0,0,0.45);
     color: #fff;
     border-radius: 8px;
-    font-size: 20px;
+    font-size: 22px;
     font-weight: bold;
-    max-width: 55vw;
+    max-width: 70vw;
     white-space: nowrap;
     overflow: hidden;
   }
@@ -120,6 +120,11 @@
     background: #000;
   }
   #inicio img {
+    object-fit: contain;
+    background: #000;
+  }
+  /* Video de victoria: encajado sin recortarse */
+  #vidVictoria {
     object-fit: contain;
     background: #000;
   }
@@ -178,7 +183,7 @@
   </div>
 
   <div id="victoria" class="overlay oculto">
-    <video id="vidVictoria" src="assets/victoria.mp4" autoplay loop muted playsinline></video>
+    <video id="vidVictoria" src="assets/victoria.mp4" loop playsinline></video>
     <div class="acciones">
       <button id="btnSiguiente" class="boton">JUGAR OTRA VEZ</button>
     </div>
@@ -245,6 +250,10 @@ audioMusica.volume = 0.4;
 const audioComer = new Audio('assets/comer.mp3');
 audioComer.volume = 0.7;
 
+// Sonido al tocar una cara (power-up)
+const audioCaja = new Audio('assets/caja.mp3');
+audioCaja.volume = 0.7;
+
 const audiosPedo = [];
 for (let i = 1; i <= 10; i++) {
   const a = new Audio(`assets/pedo${i}.mp3`);
@@ -259,6 +268,14 @@ function reproducirPedo() {
   const a = audiosPedo[Math.floor(Math.random() * audiosPedo.length)];
   try { a.currentTime = 0; a.play(); } catch(e) {}
 }
+
+// Sonido cuando un enemigo toca al jugador
+const audioMuerte = new Audio('assets/muerte.mp3');
+audioMuerte.volume = 0.7;
+
+// Sonido al mostrarse la pantalla de derrota (sin vidas)
+const audioPedoLargo = new Audio('assets/pedo-largo.mp3');
+audioPedoLargo.volume = 0.7;
 
 const videoCentro = document.createElement('video');
 videoCentro.src = 'assets/centro.mp4';
@@ -493,6 +510,8 @@ function actualizar(dt, ahora) {
     if (Math.hypot(c.x - jugador.x, c.y - jugador.y) < CELL * 0.7) {
       c.recogida = true;
       paralizadoHasta = ahora + CARAS_PARALIZA;
+      // Sonido al tocar la cara
+      try { audioCaja.currentTime = 0; audioCaja.play(); } catch(e){}
     }
   }
 
@@ -512,13 +531,20 @@ function actualizar(dt, ahora) {
 function perderVida() {
   vidas--;
   document.getElementById('vidas').textContent = vidas;
-  reproducirPedo();
+
+  // 1) Sonido de muerte SIEMPRE que un enemigo lo toca
+  try { audioMuerte.currentTime = 0; audioMuerte.play(); } catch(e){}
+
+  // 2) Si se queda sin vidas, mostrar pantalla de derrota + pedo largo
   if (vidas <= 0) {
     juegoActivo = false;
     audioMusica.pause();
+    try { audioPedoLargo.currentTime = 0; audioPedoLargo.play(); } catch(e){}
     document.getElementById('derrota').classList.remove('oculto');
     return;
   }
+
+  // 3) Si todavía tiene vidas, reposicionar al jugador
   const p = centroCelda(Math.floor(COLS / 2), ROWS - 3);
   jugador.x = p.x;
   jugador.y = p.y;
@@ -527,11 +553,28 @@ function perderVida() {
 
 function ganar() {
   juegoActivo = false;
+
+  // Cortar música de fondo
   audioMusica.pause();
+  audioMusica.currentTime = 0;
+
+  // Cortar sonidos que puedan estar sonando
+  audioMuerte.pause();      audioMuerte.currentTime = 0;
+  audioPedoLargo.pause();   audioPedoLargo.currentTime = 0;
+  audioCaja.pause();        audioCaja.currentTime = 0;
+
+  // Mostrar overlay de victoria
   const vid = document.getElementById('vidVictoria');
-  vid.currentTime = 0;
-  vid.play().catch(()=>{});
   document.getElementById('victoria').classList.remove('oculto');
+
+  // Reproducir video con su audio propio
+  vid.currentTime = 0;
+  vid.volume = 1.0;
+  vid.muted = false;
+  vid.play().catch(err => {
+    vid.muted = true;
+    vid.play().catch(()=>{});
+  });
 }
 
 // ---------- RENDER ----------
@@ -632,10 +675,19 @@ function bucle(ahora) {
 
 // ---------- BOTONES ----------
 document.getElementById('btnReiniciar').addEventListener('click', () => {
+  audioMuerte.pause();      audioMuerte.currentTime = 0;
+  audioPedoLargo.pause();   audioPedoLargo.currentTime = 0;
+  audioCaja.pause();        audioCaja.currentTime = 0;
   inicializar();
   ultimoMs = performance.now();
 });
 document.getElementById('btnSiguiente').addEventListener('click', () => {
+  audioMuerte.pause();      audioMuerte.currentTime = 0;
+  audioPedoLargo.pause();   audioPedoLargo.currentTime = 0;
+  audioCaja.pause();        audioCaja.currentTime = 0;
+  const vid = document.getElementById('vidVictoria');
+  vid.pause();
+  vid.currentTime = 0;
   inicializar();
   ultimoMs = performance.now();
 });
@@ -663,7 +715,7 @@ const NOMBRES = [
   'Ivana Vescovi',
   'Jonatan Jara',
   'Kiara Bustamante',
-  'Guzman Facundo',
+  'Facundo Guzman ',
   'Echenique Lucía',
   'Cintia Lemarchand',
   'Rita Larroulet',
