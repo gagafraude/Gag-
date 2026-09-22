@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -14,6 +15,7 @@
     user-select: none;
     touch-action: none;
   }
+
   #hud {
     position: fixed;
     top: 0; left: 0; right: 0;
@@ -27,6 +29,7 @@
     z-index: 10;
     background: rgba(255,255,255,0.4);
   }
+
   #juego {
     display: block;
     width: 100vw;
@@ -51,6 +54,7 @@
     gap: 4px;
     z-index: 20;
   }
+
   .btn-dir {
     background: rgba(0,0,0,0.35);
     border: none;
@@ -60,13 +64,14 @@
     touch-action: none;
     user-select: none;
   }
+
   .btn-dir:active { background: rgba(0,0,0,0.6); }
   .btn-dir[data-dir="arriba"]    { grid-area: arriba; }
   .btn-dir[data-dir="abajo"]     { grid-area: abajo; }
   .btn-dir[data-dir="izquierda"] { grid-area: izq; }
   .btn-dir[data-dir="derecha"]   { grid-area: der; }
 
-  /* ---------- CRÉDITOS (dentro del HUD) ---------- */
+  /* ---------- CRÉDITOS ---------- */
   #creditos {
     display: inline-flex;
     align-items: center;
@@ -81,11 +86,13 @@
     white-space: nowrap;
     overflow: hidden;
   }
+
   #creditos .etiqueta {
     font-weight: bold;
     white-space: nowrap;
     opacity: 0.9;
   }
+
   #nombreRotando {
     display: inline-block;
     white-space: nowrap;
@@ -94,6 +101,7 @@
     font-weight: bold;
     animation: aparecer 0.6s ease;
   }
+
   @keyframes aparecer {
     from { opacity: 0; transform: translateY(4px); }
     to   { opacity: 1; transform: translateY(0); }
@@ -108,31 +116,38 @@
     flex-direction: column;
     z-index: 100;
   }
+
   .overlay.oculto { display: none; }
+
   .overlay img, .overlay video {
     flex: 1;
     width: 100%;
     object-fit: cover;
     min-height: 0;
   }
+
   #imgDerrota {
     object-fit: contain;
     background: #000;
   }
+
   #inicio img {
     object-fit: contain;
     background: #000;
   }
+
   #vidVictoria {
     object-fit: contain;
     background: #000;
   }
+
   .acciones {
     background: #111;
     padding: 12px;
     display: flex;
     justify-content: center;
   }
+
   .boton {
     padding: 14px 40px;
     font-size: 20px;
@@ -145,7 +160,9 @@
   }
 </style>
 </head>
+
 <body>
+
   <div id="hud">
     <span id="creditos">
       <span class="etiqueta">Cacas:</span>
@@ -171,7 +188,7 @@
     </div>
   </div>
 
-  <!-- Pantallas overlay -->
+  <!-- Pantalla de derrota -->
   <div id="derrota" class="overlay oculto">
     <img id="imgDerrota" src="assets/derrota.png" alt="Perdiste">
     <div class="acciones">
@@ -179,6 +196,7 @@
     </div>
   </div>
 
+  <!-- Pantalla de victoria -->
   <div id="victoria" class="overlay oculto">
     <video id="vidVictoria" src="assets/victoria.mp4" loop playsinline></video>
     <div class="acciones">
@@ -199,7 +217,7 @@ const COLOR_FONDO = '#a9a9a9';
 const COLOR_PARED = '#3a3a3a';
 
 const VEL_JUGADOR = 1.5;
-const VEL_ENEMIGO = 0.9;
+const VEL_ENEMIGO = 0.8;
 
 const ESCALA_PERSONAJE = 2.5;
 const MARGEN_PARED = 0;
@@ -211,6 +229,9 @@ const ENEMIGOS_INI   = 4;
 const ENEMIGOS_CADA  = 5000;
 const VIDAS_INI      = 3;
 const PUNTOS_CACA    = 10;
+
+// Cada 6 cacas comidas aparece una imagen y su audio
+const CACA_PARA_EVENTO = 6;
 
 const CENTRO = { c1: 3, c2: 6, r1: 6, r2: 9 };
 const ASPECTO_CENTRO = 1920 / 1080;
@@ -224,21 +245,33 @@ let CELL = 0, OFFSET_X = 0, OFFSET_Y = 0;
 function ajustarCanvas() {
   const w = window.innerWidth;
   const h = window.innerHeight - 40;
+
   canvas.width  = w;
   canvas.height = h;
+
   const cellW = w / COLS;
   const cellH = h / ROWS;
+
   CELL = Math.floor(Math.min(cellW, cellH));
+
   OFFSET_X = Math.floor((w - CELL * COLS) / 2);
   OFFSET_Y = Math.floor((h - CELL * ROWS) / 2) + 20;
 }
+
 window.addEventListener('resize', ajustarCanvas);
 
 // ---------- RECURSOS ----------
-const imgJugador = new Image(); imgJugador.src = 'assets/jugador.png';
-const imgEnemigo = new Image(); imgEnemigo.src = 'assets/enemigo.png';
-const imgCaca    = new Image(); imgCaca.src    = 'assets/caca.png';
-const imgCara    = new Image(); imgCara.src    = 'assets/cara.png';
+const imgJugador = new Image();
+imgJugador.src = 'assets/jugador.png';
+
+const imgEnemigo = new Image();
+imgEnemigo.src = 'assets/enemigo.png';
+
+const imgCaca = new Image();
+imgCaca.src = 'assets/caca.png';
+
+const imgCara = new Image();
+imgCara.src = 'assets/cara.png';
 
 const audioMusica = new Audio('assets/musica.mp3');
 audioMusica.loop = true;
@@ -251,18 +284,28 @@ const audioCaja = new Audio('assets/caja.mp3');
 audioCaja.volume = 0.7;
 
 const audiosPedo = [];
+
 for (let i = 1; i <= 10; i++) {
   const a = new Audio(`assets/pedo${i}.mp3`);
   a.volume = 0.5;
   audiosPedo.push(a);
 }
+
 let ultimoPedoMs = 0;
+
 function reproducirPedo() {
   const ahora = performance.now();
+
   if (ahora - ultimoPedoMs < 180) return;
+
   ultimoPedoMs = ahora;
+
   const a = audiosPedo[Math.floor(Math.random() * audiosPedo.length)];
-  try { a.currentTime = 0; a.play(); } catch(e) {}
+
+  try {
+    a.currentTime = 0;
+    a.play();
+  } catch(e) {}
 }
 
 const audioMuerte = new Audio('assets/muerte.mp3');
@@ -271,6 +314,12 @@ audioMuerte.volume = 0.7;
 const audioPedoLargo = new Audio('assets/pedo-largo.mp3');
 audioPedoLargo.volume = 0.7;
 
+// ---------- AUDIO DE DERROTA ----------
+const audioDerrota = new Audio('assets/derrotatobias.mp3');
+audioDerrota.volume = 1.0;
+audioDerrota.preload = 'auto';
+
+// ---------- VIDEO CENTRAL ----------
 const videoCentro = document.createElement('video');
 videoCentro.src = 'assets/centro.mp4';
 videoCentro.loop = true;
@@ -279,26 +328,137 @@ videoCentro.playsInline = true;
 videoCentro.autoplay = true;
 videoCentro.play().catch(()=>{});
 
+// ============================================================
+//  NUEVO: 18 AUDIOS + 18 IMÁGENES
+// ============================================================
+
+const eventosCaca = [
+  {
+    audio: 'assets/1-arielbernatene.mp3',
+    imagen: 'assets/1-arielbernatene.png'
+  },
+  {
+    audio: 'assets/2-silvanacalicchia.mp3',
+    imagen: 'assets/2-silvanacalicchia.png'
+  },
+  {
+    audio: 'assets/3-piavivet.mp3',
+    imagen: 'assets/3-piavivet.png'
+  },
+  {
+    audio: 'assets/4-gastonsantamaria.mp3',
+    imagen: 'assets/4-gastonsantamaria.png'
+  },
+  {
+    audio: 'assets/5-carinaflores.mp3',
+    imagen: 'assets/5-carinaflores.png'
+  },
+  {
+    audio: 'assets/9-ivanavescovi.mp3',
+    imagen: 'assets/9-ivanavescovi.png'
+  },
+  {
+    audio: 'assets/10-claudiagalera.mp3',
+    imagen: 'assets/10-claudiagalera.png'
+  },
+  {
+    audio: 'assets/11-micaelaarias.mp3',
+    imagen: 'assets/11-micaelaarias.png'
+  },
+  {
+    audio: 'assets/12-walterocana.mp3',
+    imagen: 'assets/12-walterocana.png'
+  },
+  {
+    audio: 'assets/13-cintialemarchand.mp3',
+    imagen: 'assets/13-cintialemarchand.png'
+  },
+  {
+    audio: 'assets/14-yonatanjara.mp3',
+    imagen: 'assets/14-yonatanjara.png'
+  },
+  {
+    audio: 'assets/15-kiara.mp3',
+    imagen: 'assets/15-kiara.png'
+  },
+  {
+    audio: 'assets/16-sergionova.mp3',
+    imagen: 'assets/16-sergionova.png'
+  },
+  {
+    audio: 'assets/17-fabianpoblete.mp3',
+    imagen: 'assets/17-fabianpoblete.png'
+  },
+  {
+    audio: 'assets/18-albano.mp3',
+    imagen: 'assets/18-albano.png'
+  }
+];
+
+// Pre-cargar las imágenes
+eventosCaca.forEach(evento => {
+  evento.img = new Image();
+  evento.img.src = evento.imagen;
+});
+
+// Pre-cargar los audios
+eventosCaca.forEach(evento => {
+  evento.audioObj = new Audio(evento.audio);
+  evento.audioObj.preload = 'auto';
+  evento.audioObj.volume = 1.0;
+});
+
+// Imagen actualmente mostrada en el centro
+let eventoCentroActivo = null;
+
+// Audio actualmente reproducido
+let audioEventoActivo = null;
+
+// Para no repetir inmediatamente el mismo evento
+let ultimoEvento = -1;
+
 // ---------- ESTADO ----------
 let jugador, enemigos, cacas, caras, puntos, vidas, paralizadoHasta, ultimoEnemigo, juegoActivo;
-let frameJugador = 0, frameEnemigo = 0;
+
+let cacasComidasDesdeEvento = 0;
+
+let frameJugador = 0;
+let frameEnemigo = 0;
+
 let ultimoFrameMs = 0;
 let ultimoMs = 0;
 let pasoAcumulado = 0;
 
 // ---------- UTILIDADES ----------
 function esCentro(col, fila) {
-  return col >= CENTRO.c1 && col <= CENTRO.c2 && fila >= CENTRO.r1 && fila <= CENTRO.r2;
+  return col >= CENTRO.c1 &&
+         col <= CENTRO.c2 &&
+         fila >= CENTRO.r1 &&
+         fila <= CENTRO.r2;
 }
+
 function esBorde(col, fila) {
-  return col === 0 || col === COLS - 1 || fila === 0 || fila === ROWS - 1;
+  return col === 0 ||
+         col === COLS - 1 ||
+         fila === 0 ||
+         fila === ROWS - 1;
 }
-function esBloque(col, fila) { return esBorde(col, fila) || esCentro(col, fila); }
-function celdaLibre(col, fila) { return !esBloque(col, fila); }
+
+function esBloque(col, fila) {
+  return esBorde(col, fila) || esCentro(col, fila);
+}
+
+function celdaLibre(col, fila) {
+  return !esBloque(col, fila);
+}
 
 function centroCelda(col, fila) {
-  return { x: OFFSET_X + (col + 0.5) * CELL, y: OFFSET_Y + (fila + 0.5) * CELL };
+  return {
+    x: OFFSET_X + (col + 0.5) * CELL,
+    y: OFFSET_Y + (fila + 0.5) * CELL
+  };
 }
+
 function celdaDePixel(px, py) {
   return {
     col: Math.floor((px - OFFSET_X) / CELL),
@@ -309,61 +469,177 @@ function celdaDePixel(px, py) {
 function rectCentro() {
   const zonaX = OFFSET_X + CENTRO.c1 * CELL;
   const zonaY = OFFSET_Y + CENTRO.r1 * CELL;
+
   const zonaW = (CENTRO.c2 - CENTRO.c1 + 1) * CELL;
   const zonaH = (CENTRO.r2 - CENTRO.r1 + 1) * CELL;
 
   let w = zonaW;
   let h = w / ASPECTO_CENTRO;
+
   if (h > zonaH) {
     h = zonaH;
     w = h * ASPECTO_CENTRO;
   }
+
   const x = zonaX + (zonaW - w) / 2;
   const y = zonaY + (zonaH - h) / 2;
+
   return { x, y, w, h };
+}
+
+// ============================================================
+//  NUEVO: MOSTRAR EVENTO DE LAS 6 CACAS
+// ============================================================
+
+function mostrarEventoCaca() {
+
+  if (!eventosCaca.length) return;
+
+  let indice;
+
+  // Elegir aleatoriamente intentando no repetir
+  // inmediatamente el mismo evento.
+  do {
+    indice =
+      Math.floor(Math.random() * eventosCaca.length);
+  } while (
+    eventosCaca.length > 1 &&
+    indice === ultimoEvento
+  );
+
+  ultimoEvento = indice;
+
+  const evento = eventosCaca[indice];
+
+  eventoCentroActivo = evento;
+
+  // Detener el audio anterior, si hubiera alguno
+  if (audioEventoActivo) {
+    audioEventoActivo.pause();
+    audioEventoActivo.currentTime = 0;
+  }
+
+  audioEventoActivo = evento.audioObj;
+
+  // El video central deja de verse mientras aparece la imagen
+  videoCentro.pause();
+
+  // Reiniciar y reproducir el audio correspondiente
+  audioEventoActivo.currentTime = 0;
+
+  audioEventoActivo.play().catch(() => {});
+
+  // Cuando termina el audio, vuelve el video central
+  audioEventoActivo.onended = () => {
+
+    if (audioEventoActivo === evento.audioObj) {
+
+      eventoCentroActivo = null;
+
+      videoCentro.currentTime =
+        videoCentro.currentTime;
+
+      videoCentro.play().catch(() => {});
+    }
+  };
 }
 
 // ---------- INICIALIZACIÓN ----------
 function inicializar() {
   ajustarCanvas();
 
-  const p0 = centroCelda(Math.floor(COLS / 2), ROWS - 3);
-  jugador = { x: p0.x, y: p0.y, dir: 'arriba', vel: VEL_JUGADOR, vivo: true };
+  const p0 = centroCelda(
+    Math.floor(COLS / 2),
+    ROWS - 3
+  );
+
+  jugador = {
+    x: p0.x,
+    y: p0.y,
+    dir: 'arriba',
+    vel: VEL_JUGADOR,
+    vivo: true
+  };
 
   cacas = [];
+
   for (let f = 0; f < ROWS; f++) {
     for (let c = 0; c < COLS; c++) {
+
       if (!celdaLibre(c, f)) continue;
-      if (c === Math.floor(COLS/2) && f === ROWS - 3) continue;
+
+      if (
+        c === Math.floor(COLS / 2) &&
+        f === ROWS - 3
+      ) continue;
+
       if (Math.random() < PROB_CACA) {
         const p = centroCelda(c, f);
-        cacas.push({ x: p.x, y: p.y, comida: false });
+
+        cacas.push({
+          x: p.x,
+          y: p.y,
+          comida: false
+        });
       }
     }
   }
 
   caras = [];
+
   let intentos = 0;
+
   while (caras.length < NUM_CARAS && intentos < 500) {
+
     intentos++;
+
     const c = 1 + Math.floor(Math.random() * (COLS - 2));
     const f = 1 + Math.floor(Math.random() * (ROWS - 2));
+
     if (!celdaLibre(c, f)) continue;
+
     const p = centroCelda(c, f);
-    if (Math.hypot(p.x - jugador.x, p.y - jugador.y) < CELL * 3) continue;
-    if (caras.some(ca => Math.hypot(ca.x - p.x, ca.y - p.y) < CELL)) continue;
-    caras.push({ x: p.x, y: p.y, recogida: false });
+
+    if (
+      Math.hypot(
+        p.x - jugador.x,
+        p.y - jugador.y
+      ) < CELL * 3
+    ) continue;
+
+    if (
+      caras.some(ca =>
+        Math.hypot(
+          ca.x - p.x,
+          ca.y - p.y
+        ) < CELL
+      )
+    ) continue;
+
+    caras.push({
+      x: p.x,
+      y: p.y,
+      recogida: false
+    });
   }
 
   enemigos = [];
+
   const esquinas = [
     centroCelda(1, 1),
     centroCelda(COLS - 2, 1),
     centroCelda(1, ROWS - 2),
     centroCelda(COLS - 2, ROWS - 2)
   ];
+
   for (let i = 0; i < ENEMIGOS_INI; i++) {
-    enemigos.push({ x: esquinas[i].x, y: esquinas[i].y, dir: 'abajo', vel: VEL_ENEMIGO });
+
+    enemigos.push({
+      x: esquinas[i].x,
+      y: esquinas[i].y,
+      dir: 'abajo',
+      vel: VEL_ENEMIGO
+    });
   }
 
   puntos = 0;
@@ -373,12 +649,27 @@ function inicializar() {
   juegoActivo = true;
   pasoAcumulado = 0;
 
-  // Se quitaron los updates del HUD de puntos y vidas
-  // document.getElementById('puntos').textContent = puntos;
-  // document.getElementById('vidas').textContent = vidas;
+  // Reiniciar contador de cacas para el evento
+  cacasComidasDesdeEvento = 0;
+
+  // Detener evento anterior
+  eventoCentroActivo = null;
+
+  if (audioEventoActivo) {
+    audioEventoActivo.pause();
+    audioEventoActivo.currentTime = 0;
+    audioEventoActivo = null;
+  }
+
+  videoCentro.currentTime = 0;
+  videoCentro.play().catch(()=>{});
 
   document.getElementById('derrota').classList.add('oculto');
   document.getElementById('victoria').classList.add('oculto');
+
+  // Detener cualquier audio de derrota anterior
+  audioDerrota.pause();
+  audioDerrota.currentTime = 0;
 
   audioMusica.currentTime = 0;
   audioMusica.play().catch(() => {});
@@ -386,316 +677,845 @@ function inicializar() {
 
 // ---------- APARICIÓN DE ENEMIGOS ----------
 function agregarEnemigoAleatorio() {
+
   const candidatos = [];
-  for (let c = 1; c < COLS - 1; c++)
-    for (let f = 1; f < ROWS - 1; f++)
-      if (celdaLibre(c, f)) candidatos.push({ c, f });
+
+  for (let c = 1; c < COLS - 1; c++) {
+    for (let f = 1; f < ROWS - 1; f++) {
+      if (celdaLibre(c, f)) {
+        candidatos.push({ c, f });
+      }
+    }
+  }
+
   if (!candidatos.length) return;
-  const e = candidatos[Math.floor(Math.random() * candidatos.length)];
+
+  const e =
+    candidatos[
+      Math.floor(Math.random() * candidatos.length)
+    ];
+
   const p = centroCelda(e.c, e.f);
-  enemigos.push({ x: p.x, y: p.y, dir: 'abajo', vel: VEL_ENEMIGO });
+
+  enemigos.push({
+    x: p.x,
+    y: p.y,
+    dir: 'abajo',
+    vel: VEL_ENEMIGO
+  });
 }
 
 // ---------- INPUT ----------
 function activarAudioUsuario() {
-  if (audioMusica.paused) audioMusica.play().catch(()=>{});
+  if (audioMusica.paused && juegoActivo) {
+    audioMusica.play().catch(()=>{});
+  }
 }
+
 document.querySelectorAll('.btn-dir').forEach(btn => {
+
   const dir = btn.dataset.dir;
+
   const activar = (ev) => {
+
     ev.preventDefault();
+
     activarAudioUsuario();
-    if (jugador) jugador.dir = dir;
+
+    if (jugador) {
+      jugador.dir = dir;
+    }
   };
-  btn.addEventListener('touchstart', activar, { passive: false });
-  btn.addEventListener('mousedown', activar);
+
+  btn.addEventListener(
+    'touchstart',
+    activar,
+    { passive: false }
+  );
+
+  btn.addEventListener(
+    'mousedown',
+    activar
+  );
 });
 
 window.addEventListener('keydown', e => {
+
   activarAudioUsuario();
+
   if (!jugador) return;
-  if (e.key === 'ArrowUp')    jugador.dir = 'arriba';
-  if (e.key === 'ArrowDown')  jugador.dir = 'abajo';
-  if (e.key === 'ArrowLeft')  jugador.dir = 'izquierda';
-  if (e.key === 'ArrowRight') jugador.dir = 'derecha';
+
+  if (e.key === 'ArrowUp')
+    jugador.dir = 'arriba';
+
+  if (e.key === 'ArrowDown')
+    jugador.dir = 'abajo';
+
+  if (e.key === 'ArrowLeft')
+    jugador.dir = 'izquierda';
+
+  if (e.key === 'ArrowRight')
+    jugador.dir = 'derecha';
 });
 
 // ---------- MOVIMIENTO ----------
 function moverEntidad(ent, dt) {
-  const dx = (ent.dir === 'derecha' ? 1 : ent.dir === 'izquierda' ? -1 : 0) * ent.vel * dt;
-  const dy = (ent.dir === 'abajo'   ? 1 : ent.dir === 'arriba'    ? -1 : 0) * ent.vel * dt;
+
+  const dx =
+    (ent.dir === 'derecha'
+      ? 1
+      : ent.dir === 'izquierda'
+      ? -1
+      : 0) *
+    ent.vel *
+    dt;
+
+  const dy =
+    (ent.dir === 'abajo'
+      ? 1
+      : ent.dir === 'arriba'
+      ? -1
+      : 0) *
+    ent.vel *
+    dt;
+
   let movido = 0;
 
   if (dx !== 0) {
+
     const nuevaX = ent.x + dx;
-    const celda = celdaDePixel(nuevaX + Math.sign(dx) * CELL * MARGEN_PARED, ent.y);
-    if (celdaLibre(celda.col, celda.fila)) { ent.x = nuevaX; movido += Math.abs(dx); }
-    else {
+
+    const celda = celdaDePixel(
+      nuevaX + Math.sign(dx) * CELL * MARGEN_PARED,
+      ent.y
+    );
+
+    if (celdaLibre(celda.col, celda.fila)) {
+
+      ent.x = nuevaX;
+      movido += Math.abs(dx);
+
+    } else {
+
       const al = celdaDePixel(ent.x, ent.y);
-      ent.x = centroCelda(al.col, al.fila).x;
+
+      ent.x =
+        centroCelda(
+          al.col,
+          al.fila
+        ).x;
     }
   }
+
   if (dy !== 0) {
+
     const nuevaY = ent.y + dy;
-    const celda = celdaDePixel(ent.x, nuevaY + Math.sign(dy) * CELL * MARGEN_PARED);
-    if (celdaLibre(celda.col, celda.fila)) { ent.y = nuevaY; movido += Math.abs(dy); }
-    else {
+
+    const celda = celdaDePixel(
+      ent.x,
+      nuevaY + Math.sign(dy) * CELL * MARGEN_PARED
+    );
+
+    if (celdaLibre(celda.col, celda.fila)) {
+
+      ent.y = nuevaY;
+      movido += Math.abs(dy);
+
+    } else {
+
       const al = celdaDePixel(ent.x, ent.y);
-      ent.y = centroCelda(al.col, al.fila).y;
+
+      ent.y =
+        centroCelda(
+          al.col,
+          al.fila
+        ).y;
     }
   }
+
   return movido;
 }
 
 // ---------- IA ----------
 function moverEnemigoIA(en, dt) {
+
   const celda = celdaDePixel(en.x, en.y);
-  const cx = centroCelda(celda.col, celda.fila).x;
-  const cy = centroCelda(celda.col, celda.fila).y;
+
+  const cx =
+    centroCelda(celda.col, celda.fila).x;
+
+  const cy =
+    centroCelda(celda.col, celda.fila).y;
+
   const alX = Math.abs(en.x - cx) < 2;
   const alY = Math.abs(en.y - cy) < 2;
 
   if (alX && alY) {
+
     const dx = jugador.x - en.x;
     const dy = jugador.y - en.y;
+
     const opciones = [];
+
     if (Math.abs(dx) > Math.abs(dy)) {
-      opciones.push(dx > 0 ? 'derecha' : 'izquierda');
-      opciones.push(dy > 0 ? 'abajo' : 'arriba');
+
+      opciones.push(
+        dx > 0 ? 'derecha' : 'izquierda'
+      );
+
+      opciones.push(
+        dy > 0 ? 'abajo' : 'arriba'
+      );
+
     } else {
-      opciones.push(dy > 0 ? 'abajo' : 'arriba');
-      opciones.push(dx > 0 ? 'derecha' : 'izquierda');
+
+      opciones.push(
+        dy > 0 ? 'abajo' : 'arriba'
+      );
+
+      opciones.push(
+        dx > 0 ? 'derecha' : 'izquierda'
+      );
     }
-    const deltas = { arriba:[0,-1], abajo:[0,1], izquierda:[-1,0], derecha:[1,0] };
+
+    const deltas = {
+      arriba: [0, -1],
+      abajo: [0, 1],
+      izquierda: [-1, 0],
+      derecha: [1, 0]
+    };
+
     for (const dir of opciones) {
+
       const d = deltas[dir];
-      if (celdaLibre(celda.col + d[0], celda.fila + d[1])) { en.dir = dir; break; }
+
+      if (
+        celdaLibre(
+          celda.col + d[0],
+          celda.fila + d[1]
+        )
+      ) {
+        en.dir = dir;
+        break;
+      }
     }
   }
+
   moverEntidad(en, dt);
 }
 
 // ---------- UPDATE ----------
 function actualizar(dt, ahora) {
+
   if (!juegoActivo) return;
 
-  const movido = moverEntidad(jugador, dt);
+  const movido =
+    moverEntidad(jugador, dt);
+
   pasoAcumulado += movido;
+
   if (pasoAcumulado >= CELL * 0.5) {
+
     pasoAcumulado = 0;
+
     reproducirPedo();
   }
 
-  if (ahora - ultimoEnemigo >= ENEMIGOS_CADA) {
+  if (
+    ahora - ultimoEnemigo >= ENEMIGOS_CADA
+  ) {
+
     ultimoEnemigo = ahora;
+
     agregarEnemigoAleatorio();
   }
 
   for (const c of cacas) {
+
     if (c.comida) continue;
-    if (Math.hypot(c.x - jugador.x, c.y - jugador.y) < CELL * 0.7) {
+
+    if (
+      Math.hypot(
+        c.x - jugador.x,
+        c.y - jugador.y
+      ) < CELL * 0.7
+    ) {
+
       c.comida = true;
+
       puntos += PUNTOS_CACA;
-      // Se quitó el update del HUD:
-      // document.getElementById('puntos').textContent = puntos;
-      try { audioComer.currentTime = 0; audioComer.play(); } catch(e){}
+
+      // Contar las cacas comidas
+      cacasComidasDesdeEvento++;
+
+      try {
+        audioComer.currentTime = 0;
+        audioComer.play();
+      } catch(e) {}
+
+      // Cada 6 cacas:
+      // elegir aleatoriamente un audio + imagen
+      if (
+        cacasComidasDesdeEvento >= CACA_PARA_EVENTO
+      ) {
+
+        cacasComidasDesdeEvento = 0;
+
+        mostrarEventoCaca();
+      }
     }
   }
 
   for (const c of caras) {
+
     if (c.recogida) continue;
-    if (Math.hypot(c.x - jugador.x, c.y - jugador.y) < CELL * 0.7) {
+
+    if (
+      Math.hypot(
+        c.x - jugador.x,
+        c.y - jugador.y
+      ) < CELL * 0.7
+    ) {
+
       c.recogida = true;
-      paralizadoHasta = ahora + CARAS_PARALIZA;
-      try { audioCaja.currentTime = 0; audioCaja.play(); } catch(e){}
+
+      paralizadoHasta =
+        ahora + CARAS_PARALIZA;
+
+      try {
+        audioCaja.currentTime = 0;
+        audioCaja.play();
+      } catch(e) {}
     }
   }
 
-  const paralizado = ahora < paralizadoHasta;
-  if (!paralizado) for (const en of enemigos) moverEnemigoIA(en, dt);
+  const paralizado =
+    ahora < paralizadoHasta;
+
+  if (!paralizado) {
+    for (const en of enemigos) {
+      moverEnemigoIA(en, dt);
+    }
+  }
 
   for (const en of enemigos) {
-    if (Math.hypot(en.x - jugador.x, en.y - jugador.y) < CELL * 0.8) {
+
+    if (
+      Math.hypot(
+        en.x - jugador.x,
+        en.y - jugador.y
+      ) < CELL * 0.8
+    ) {
+
       perderVida();
+
       return;
     }
   }
 
-  if (cacas.every(c => c.comida)) ganar();
+  if (cacas.every(c => c.comida)) {
+    ganar();
+  }
 }
 
 function perderVida() {
-  vidas--;
-  // Se quitó el update del HUD:
-  // document.getElementById('vidas').textContent = vidas;
 
-  try { audioMuerte.currentTime = 0; audioMuerte.play(); } catch(e){}
+  vidas--;
+
+  try {
+    audioMuerte.currentTime = 0;
+    audioMuerte.play();
+  } catch(e) {}
 
   if (vidas <= 0) {
+
     juegoActivo = false;
+
     audioMusica.pause();
-    try { audioPedoLargo.currentTime = 0; audioPedoLargo.play(); } catch(e){}
-    document.getElementById('derrota').classList.remove('oculto');
+
+    // Detener evento central si estaba reproduciéndose
+    eventoCentroActivo = null;
+
+    if (audioEventoActivo) {
+      audioEventoActivo.pause();
+      audioEventoActivo.currentTime = 0;
+      audioEventoActivo = null;
+    }
+
+    videoCentro.play().catch(()=>{});
+
+    try {
+      audioPedoLargo.currentTime = 0;
+      audioPedoLargo.play();
+    } catch(e) {}
+
+    audioDerrota.currentTime = 0;
+    audioDerrota.play().catch(() => {});
+
+    document
+      .getElementById('derrota')
+      .classList.remove('oculto');
+
     return;
   }
 
-  const p = centroCelda(Math.floor(COLS / 2), ROWS - 3);
+  const p =
+    centroCelda(
+      Math.floor(COLS / 2),
+      ROWS - 3
+    );
+
   jugador.x = p.x;
   jugador.y = p.y;
   jugador.dir = 'arriba';
 }
 
 function ganar() {
+
   juegoActivo = false;
 
   audioMusica.pause();
   audioMusica.currentTime = 0;
 
-  audioMuerte.pause();      audioMuerte.currentTime = 0;
-  audioPedoLargo.pause();   audioPedoLargo.currentTime = 0;
-  audioCaja.pause();        audioCaja.currentTime = 0;
+  audioMuerte.pause();
+  audioMuerte.currentTime = 0;
 
-  const vid = document.getElementById('vidVictoria');
-  document.getElementById('victoria').classList.remove('oculto');
+  audioPedoLargo.pause();
+  audioPedoLargo.currentTime = 0;
+
+  audioCaja.pause();
+  audioCaja.currentTime = 0;
+
+  // Detener evento central
+  eventoCentroActivo = null;
+
+  if (audioEventoActivo) {
+    audioEventoActivo.pause();
+    audioEventoActivo.currentTime = 0;
+    audioEventoActivo = null;
+  }
+
+  videoCentro.play().catch(()=>{});
+
+  // Detener sonido de derrota por seguridad
+  audioDerrota.pause();
+  audioDerrota.currentTime = 0;
+
+  const vid =
+    document.getElementById('vidVictoria');
+
+  document
+    .getElementById('victoria')
+    .classList.remove('oculto');
 
   vid.currentTime = 0;
   vid.volume = 1.0;
   vid.muted = false;
+
   vid.play().catch(err => {
+
     vid.muted = true;
+
     vid.play().catch(()=>{});
   });
 }
 
 // ---------- RENDER ----------
-const FILA_DIR = { arriba: 0, derecha: 1, abajo: 2, izquierda: 3 };
+const FILA_DIR = {
+  arriba: 0,
+  derecha: 1,
+  abajo: 2,
+  izquierda: 3
+};
 
-function dibujarSprite(img, ent, dir, frame, tamano = CELL) {
-  const filaDir = FILA_DIR[dir] ?? 2;
+function dibujarSprite(
+  img,
+  ent,
+  dir,
+  frame,
+  tamano = CELL
+) {
+
+  const filaDir =
+    FILA_DIR[dir] ?? 2;
+
   const sw = img.width / 4;
   const sh = img.height / 4;
+
   const sx = frame * sw;
   const sy = filaDir * sh;
-  ctx.drawImage(img, sx, sy, sw, sh,
-    ent.x - tamano / 2, ent.y - tamano / 2, tamano, tamano);
+
+  ctx.drawImage(
+    img,
+    sx,
+    sy,
+    sw,
+    sh,
+    ent.x - tamano / 2,
+    ent.y - tamano / 2,
+    tamano,
+    tamano
+  );
 }
 
 function dibujar(ahora) {
+
   ctx.fillStyle = COLOR_FONDO;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
 
   if (!jugador) return;
 
   ctx.strokeStyle = COLOR_PARED;
   ctx.lineWidth = Math.max(4, CELL * 0.15);
-  ctx.strokeRect(OFFSET_X, OFFSET_Y, CELL * COLS, CELL * ROWS);
+
+  ctx.strokeRect(
+    OFFSET_X,
+    OFFSET_Y,
+    CELL * COLS,
+    CELL * ROWS
+  );
 
   const rect = rectCentro();
-  if (videoCentro.readyState >= 2) {
-    ctx.drawImage(videoCentro, rect.x, rect.y, rect.w, rect.h);
+
+  // ==========================================================
+  //  CENTRO: VIDEO O IMAGEN DEL EVENTO
+  // ==========================================================
+
+  if (
+    eventoCentroActivo &&
+    eventoCentroActivo.img.complete &&
+    eventoCentroActivo.img.naturalWidth > 0
+  ) {
+
+    // Mostrar la imagen correspondiente al audio
+    ctx.drawImage(
+      eventoCentroActivo.img,
+      rect.x,
+      rect.y,
+      rect.w,
+      rect.h
+    );
+
+  } else if (videoCentro.readyState >= 2) {
+
+    // Video central normal
+    ctx.drawImage(
+      videoCentro,
+      rect.x,
+      rect.y,
+      rect.w,
+      rect.h
+    );
+
   } else {
+
     ctx.fillStyle = COLOR_PARED;
-    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+
+    ctx.fillRect(
+      rect.x,
+      rect.y,
+      rect.w,
+      rect.h
+    );
   }
 
+  // ---------- CACAS ----------
   for (const c of cacas) {
+
     if (c.comida) continue;
+
     const s = CELL * 0.9;
-    if (imgCaca.complete && imgCaca.naturalWidth > 0)
-      ctx.drawImage(imgCaca, c.x - s/2, c.y - s/2, s, s);
-    else {
-      ctx.fillStyle = '#6b3e1e';
-      ctx.beginPath(); ctx.arc(c.x, c.y, s/2, 0, Math.PI*2); ctx.fill();
-    }
-  }
 
-  for (const c of caras) {
-    if (c.recogida) continue;
-    const s = CELL * 1.0;
-    if (imgCara.complete && imgCara.naturalWidth > 0)
-      ctx.drawImage(imgCara, c.x - s/2, c.y - s/2, s, s);
-    else {
-      ctx.fillStyle = '#f1c40f';
-      ctx.beginPath(); ctx.arc(c.x, c.y, s/2, 0, Math.PI*2); ctx.fill();
-    }
-  }
+    if (
+      imgCaca.complete &&
+      imgCaca.naturalWidth > 0
+    ) {
 
-  const tamPersonaje = CELL * ESCALA_PERSONAJE;
+      ctx.drawImage(
+        imgCaca,
+        c.x - s / 2,
+        c.y - s / 2,
+        s,
+        s
+      );
 
-  const paralizado = ahora < paralizadoHasta;
-  for (const en of enemigos) {
-    if (imgEnemigo.complete && imgEnemigo.naturalWidth > 0) {
-      dibujarSprite(imgEnemigo, en, en.dir, frameEnemigo, tamPersonaje);
     } else {
-      ctx.fillStyle = paralizado ? '#3498db' : '#c0392b';
-      ctx.beginPath(); ctx.arc(en.x, en.y, tamPersonaje * 0.4, 0, Math.PI*2); ctx.fill();
-    }
-    if (paralizado) {
-      ctx.fillStyle = 'rgba(60,120,255,0.5)';
-      ctx.beginPath(); ctx.arc(en.x, en.y, tamPersonaje * 0.45, 0, Math.PI*2); ctx.fill();
+
+      ctx.fillStyle = '#6b3e1e';
+
+      ctx.beginPath();
+
+      ctx.arc(
+        c.x,
+        c.y,
+        s / 2,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
     }
   }
 
+  // ---------- CARAS ----------
+  for (const c of caras) {
+
+    if (c.recogida) continue;
+
+    const s = CELL * 1.0;
+
+    if (
+      imgCara.complete &&
+      imgCara.naturalWidth > 0
+    ) {
+
+      ctx.drawImage(
+        imgCara,
+        c.x - s / 2,
+        c.y - s / 2,
+        s,
+        s
+      );
+
+    } else {
+
+      ctx.fillStyle = '#f1c40f';
+
+      ctx.beginPath();
+
+      ctx.arc(
+        c.x,
+        c.y,
+        s / 2,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+    }
+  }
+
+  // ---------- ENEMIGOS ----------
+  const tamPersonaje =
+    CELL * ESCALA_PERSONAJE;
+
+  const paralizado =
+    ahora < paralizadoHasta;
+
+  for (const en of enemigos) {
+
+    if (
+      imgEnemigo.complete &&
+      imgEnemigo.naturalWidth > 0
+    ) {
+
+      dibujarSprite(
+        imgEnemigo,
+        en,
+        en.dir,
+        frameEnemigo,
+        tamPersonaje
+      );
+
+    } else {
+
+      ctx.fillStyle =
+        paralizado
+          ? '#3498db'
+          : '#c0392b';
+
+      ctx.beginPath();
+
+      ctx.arc(
+        en.x,
+        en.y,
+        tamPersonaje * 0.4,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+    }
+
+    if (paralizado) {
+
+      ctx.fillStyle =
+        'rgba(60,120,255,0.5)';
+
+      ctx.beginPath();
+
+      ctx.arc(
+        en.x,
+        en.y,
+        tamPersonaje * 0.45,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
+    }
+  }
+
+  // ---------- JUGADOR ----------
   if (jugador.vivo) {
-    if (imgJugador.complete && imgJugador.naturalWidth > 0)
-      dibujarSprite(imgJugador, jugador, jugador.dir, frameJugador, tamPersonaje);
-    else {
+
+    if (
+      imgJugador.complete &&
+      imgJugador.naturalWidth > 0
+    ) {
+
+      dibujarSprite(
+        imgJugador,
+        jugador,
+        jugador.dir,
+        frameJugador,
+        tamPersonaje
+      );
+
+    } else {
+
       ctx.fillStyle = '#f39c12';
-      ctx.beginPath(); ctx.arc(jugador.x, jugador.y, tamPersonaje * 0.4, 0, Math.PI*2); ctx.fill();
+
+      ctx.beginPath();
+
+      ctx.arc(
+        jugador.x,
+        jugador.y,
+        tamPersonaje * 0.4,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fill();
     }
   }
 }
 
 // ---------- BUCLE ----------
 function bucle(ahora) {
-  const dtSeg = Math.min((ahora - ultimoMs) / 1000, 0.05);
+
+  const dtSeg =
+    Math.min(
+      (ahora - ultimoMs) / 1000,
+      0.05
+    );
+
   ultimoMs = ahora;
+
   const dt = dtSeg * 60;
 
-  if (ahora - ultimoFrameMs > 120) {
-    frameJugador = (frameJugador + 1) % 4;
-    frameEnemigo = (frameEnemigo + 1) % 4;
+  if (
+    ahora - ultimoFrameMs > 120
+  ) {
+
+    frameJugador =
+      (frameJugador + 1) % 4;
+
+    frameEnemigo =
+      (frameEnemigo + 1) % 4;
+
     ultimoFrameMs = ahora;
   }
 
   actualizar(dt, ahora);
   dibujar(ahora);
+
   requestAnimationFrame(bucle);
 }
 
 // ---------- BOTONES ----------
-document.getElementById('btnReiniciar').addEventListener('click', () => {
-  audioMuerte.pause();      audioMuerte.currentTime = 0;
-  audioPedoLargo.pause();   audioPedoLargo.currentTime = 0;
-  audioCaja.pause();        audioCaja.currentTime = 0;
-  inicializar();
-  ultimoMs = performance.now();
-});
-document.getElementById('btnSiguiente').addEventListener('click', () => {
-  audioMuerte.pause();      audioMuerte.currentTime = 0;
-  audioPedoLargo.pause();   audioPedoLargo.currentTime = 0;
-  audioCaja.pause();        audioCaja.currentTime = 0;
-  const vid = document.getElementById('vidVictoria');
-  vid.pause();
-  vid.currentTime = 0;
-  inicializar();
-  ultimoMs = performance.now();
-});
+document
+  .getElementById('btnReiniciar')
+  .addEventListener('click', () => {
+
+    audioMuerte.pause();
+    audioMuerte.currentTime = 0;
+
+    audioPedoLargo.pause();
+    audioPedoLargo.currentTime = 0;
+
+    audioCaja.pause();
+    audioCaja.currentTime = 0;
+
+    audioDerrota.pause();
+    audioDerrota.currentTime = 0;
+
+    if (audioEventoActivo) {
+      audioEventoActivo.pause();
+      audioEventoActivo.currentTime = 0;
+      audioEventoActivo = null;
+    }
+
+    eventoCentroActivo = null;
+
+    inicializar();
+
+    ultimoMs = performance.now();
+  });
+
+document
+  .getElementById('btnSiguiente')
+  .addEventListener('click', () => {
+
+    audioMuerte.pause();
+    audioMuerte.currentTime = 0;
+
+    audioPedoLargo.pause();
+    audioPedoLargo.currentTime = 0;
+
+    audioCaja.pause();
+    audioCaja.currentTime = 0;
+
+    audioDerrota.pause();
+    audioDerrota.currentTime = 0;
+
+    if (audioEventoActivo) {
+      audioEventoActivo.pause();
+      audioEventoActivo.currentTime = 0;
+      audioEventoActivo = null;
+    }
+
+    eventoCentroActivo = null;
+
+    const vid =
+      document.getElementById('vidVictoria');
+
+    vid.pause();
+    vid.currentTime = 0;
+
+    inicializar();
+
+    ultimoMs = performance.now();
+  });
 
 // ---------- PANTALLA DE INICIO ----------
-document.getElementById('btnJugar').addEventListener('click', () => {
-  document.getElementById('inicio').classList.add('oculto');
-  ajustarCanvas();
-  ultimoMs = performance.now();
-  ultimoFrameMs = performance.now();
-  inicializar();
-  dibujar(performance.now());
-});
+document
+  .getElementById('btnJugar')
+  .addEventListener('click', () => {
+
+    document
+      .getElementById('inicio')
+      .classList.add('oculto');
+
+    ajustarCanvas();
+
+    ultimoMs = performance.now();
+    ultimoFrameMs = performance.now();
+
+    inicializar();
+
+    dibujar(performance.now());
+  });
 
 // ---------- ROTADOR DE NOMBRES ----------
 const NOMBRES = [
   'Ariel Bernatene',
-  'María Larrarte',
   'Susana Rinne',
   'Gustavo Marin',
   'Silvana Calicchia',
@@ -708,41 +1528,52 @@ const NOMBRES = [
   'Guzman Facundo',
   'Echenique Lucía',
   'Cintia Lemarchand',
-  'Rita Larroulet',
-  'Gustavo Lesgart',
   'Sergio Nova',
   'Fabián Poblete',
   'Claudia Galera',
-  'Leonardo Alvarez',
-  'Gabriela Gorosito',
   'Albano Boj',
   'María Zgaib',
   'Pablo Chafrat',
   'Claudia Solis',
   'Micaela Arias',
   'Fanello Mariano',
-  'Magui Aguirre',
   'Walter Ocaña',
   'Karina Churin'
 ];
 
-const elNombre = document.getElementById('nombreRotando');
+const elNombre =
+  document.getElementById('nombreRotando');
+
 let idxNombre = 0;
+
 const INTERVALO_NOMBRE = 2500;
 
 setInterval(() => {
-  idxNombre = (idxNombre + 1) % NOMBRES.length;
-  elNombre.textContent = NOMBRES[idxNombre];
+
+  idxNombre =
+    (idxNombre + 1) % NOMBRES.length;
+
+  elNombre.textContent =
+    NOMBRES[idxNombre];
+
   elNombre.style.animation = 'none';
+
   void elNombre.offsetWidth;
-  elNombre.style.animation = 'aparecer 0.6s ease';
+
+  elNombre.style.animation =
+    'aparecer 0.6s ease';
+
 }, INTERVALO_NOMBRE);
 
 // ---------- ARRANQUE ----------
 ajustarCanvas();
+
 ultimoMs = performance.now();
 ultimoFrameMs = performance.now();
+
 requestAnimationFrame(bucle);
+
 </script>
 </body>
 </html>
+```
