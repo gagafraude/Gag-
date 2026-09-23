@@ -70,40 +70,13 @@
   .btn-dir[data-dir="izquierda"] { grid-area: izq; }
   .btn-dir[data-dir="derecha"]   { grid-area: der; }
 
-  /* ---------- CRÉDITOS ---------- */
-  #creditos {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 14px;
-    background: rgba(0,0,0,0.45);
-    color: #fff;
-    border-radius: 8px;
+  /* ---------- CONTADOR DE CACAS ---------- */
+  #contadorCacas {
+    display: inline-block;
+    color: #222;
     font-size: 22px;
     font-weight: bold;
-    max-width: 90vw;
-    white-space: nowrap;
-    overflow: hidden;
-  }
-
-  #creditos .etiqueta {
-    font-weight: bold;
-    white-space: nowrap;
-    opacity: 0.9;
-  }
-
-  #nombreRotando {
-    display: inline-block;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-weight: bold;
-    animation: aparecer 0.6s ease;
-  }
-
-  @keyframes aparecer {
-    from { opacity: 0; transform: translateY(4px); }
-    to   { opacity: 1; transform: translateY(0); }
+    line-height: 1;
   }
 
   /* ---------- OVERLAYS ---------- */
@@ -163,10 +136,7 @@
 <body>
 
   <div id="hud">
-    <span id="creditos">
-      <span class="etiqueta">Cacas:</span>
-      <span id="nombreRotando">Ariel Bernatene</span>
-    </span>
+    <span id="contadorCacas">0</span>
   </div>
 
   <canvas id="juego"></canvas>
@@ -277,6 +247,7 @@ const imgBillete = new Image();
 imgBillete.src = 'assets/billete.png';
 const BILLETE_DURACION_MS = 2000;
 const BILLETE_FRAMES = 16;
+const BILLETE_LOOPS = 2;
 const BILLETE_COLUMNAS = 4;
 const BILLETE_FILAS = 4;
 const BILLETE_ANCHO = 130;
@@ -309,11 +280,14 @@ function actualizarBilletes(ahora) {
       Math.max(0, (ahora - b.inicio) / b.duracion)
     );
 
-    // 16 cuadros repartidos exactamente durante los 2 segundos.
-    b.frame = Math.min(
-      BILLETE_FRAMES - 1,
-      Math.floor(progreso * BILLETE_FRAMES)
+    // 32 cuadros en total: el sprite sheet de 16 cuadros se reproduce 2 veces
+    // durante los 2 segundos completos del vuelo.
+    const totalFrames = BILLETE_FRAMES * BILLETE_LOOPS;
+    const frameTotal = Math.min(
+      totalFrames - 1,
+      Math.floor(progreso * totalFrames)
     );
+    b.frame = frameTotal % BILLETE_FRAMES;
 
     if (progreso >= 1) {
       b.audio.pause();
@@ -501,13 +475,40 @@ let eventoCentroActivo = null;
 // Audio actualmente reproducido
 let audioEventoActivo = null;
 
-// Para no repetir inmediatamente el mismo evento
+// Bolsa aleatoria: cada evento aparece una sola vez antes de
+// volver a habilitar todos los eventos.
+let eventosDisponibles = [];
 let ultimoEvento = -1;
+
+function mezclarEventos() {
+  eventosDisponibles = eventosCaca.map((_, indice) => indice);
+
+  // Fisher-Yates
+  for (let i = eventosDisponibles.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [eventosDisponibles[i], eventosDisponibles[j]] =
+      [eventosDisponibles[j], eventosDisponibles[i]];
+  }
+
+  // Si estamos empezando una nueva vuelta y hay más de un evento,
+  // evitamos que el primero sea igual al último de la vuelta anterior.
+  if (eventosDisponibles.length > 1 &&
+      eventosDisponibles[0] === ultimoEvento) {
+    const j = 1 + Math.floor(Math.random() * (eventosDisponibles.length - 1));
+    [eventosDisponibles[0], eventosDisponibles[j]] =
+      [eventosDisponibles[j], eventosDisponibles[0]];
+  }
+}
 
 // ---------- ESTADO ----------
 let jugador, enemigos, cacas, caras, puntos, vidas, paralizadoHasta, ultimoEnemigo, juegoActivo;
 
 let cacasComidasDesdeEvento = 0;
+
+function actualizarContadorCacas() {
+  const el = document.getElementById("contadorCacas");
+  if (el) el.textContent = cacasComidasDesdeEvento;
+}
 
 let frameJugador = 0;
 let frameEnemigo = 0;
@@ -582,18 +583,13 @@ function mostrarEventoCaca() {
 
   if (!eventosCaca.length) return;
 
-  let indice;
+  // Cuando se agotó la bolsa, se vuelve a mezclar completa.
+  // Así no se repite ningún evento hasta haber mostrado todos.
+  if (!eventosDisponibles.length) {
+    mezclarEventos();
+  }
 
-  // Elegir aleatoriamente intentando no repetir
-  // inmediatamente el mismo evento.
-  do {
-    indice =
-      Math.floor(Math.random() * eventosCaca.length);
-  } while (
-    eventosCaca.length > 1 &&
-    indice === ultimoEvento
-  );
-
+  const indice = eventosDisponibles.pop();
   ultimoEvento = indice;
 
   const evento = eventosCaca[indice];
@@ -738,6 +734,12 @@ function inicializar() {
 
   // Reiniciar contador de cacas para el evento
   cacasComidasDesdeEvento = 0;
+
+  // Nueva bolsa aleatoria para esta partida. Cada foto/audio
+  // aparecerá una sola vez antes de volver a mezclarse.
+  ultimoEvento = -1;
+  eventosDisponibles = [];
+  mezclarEventos();
 
   // Limpiar billetes de una partida anterior
   for (const b of billetesVolando) {
@@ -1041,6 +1043,7 @@ function actualizar(dt, ahora) {
 
       // Contar las cacas comidas
       cacasComidasDesdeEvento++;
+      actualizarContadorCacas();
 
       try {
         audioComer.currentTime = 0;
@@ -1612,48 +1615,6 @@ document
 
     dibujar(performance.now());
   });
-
-// ---------- ROTADOR DE NOMBRES ----------
-const NOMBRES = [
-  'Ariel Bernatene',
-  'Silvana Calicchia',
-  'Pia Vivet',
-  'Gaston Santamaria',
-  'Carina Flores',
-  'Ivana Vescovi',
-  'Jonatan Jara',
-  'Kiara Bustamante',
-  'Cintia Lemarchand',
-  'Sergio Nova',
-  'Fabián Poblete',
-  'Claudia Galera',
-  'Albano Boj',
-  'Micaela Arias',
-  'Walter Ocaña',
-];
-const elNombre =
-  document.getElementById('nombreRotando');
-
-let idxNombre = 0;
-
-const INTERVALO_NOMBRE = 2500;
-
-setInterval(() => {
-
-  idxNombre =
-    (idxNombre + 1) % NOMBRES.length;
-
-  elNombre.textContent =
-    NOMBRES[idxNombre];
-
-  elNombre.style.animation = 'none';
-
-  void elNombre.offsetWidth;
-
-  elNombre.style.animation =
-    'aparecer 0.6s ease';
-
-}, INTERVALO_NOMBRE);
 
 // ---------- ARRANQUE ----------
 ajustarCanvas();
