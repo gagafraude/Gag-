@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -273,6 +272,94 @@ imgCaca.src = 'assets/caca.png';
 const imgCara = new Image();
 imgCara.src = 'assets/cara.png';
 
+// ---------- BILLETE VOLADOR (sprite sheet 4x4 = 16 frames) ----------
+const imgBillete = new Image();
+imgBillete.src = 'assets/billete.png';
+const BILLETE_DURACION_MS = 2000;
+const BILLETE_FRAMES = 16;
+const BILLETE_COLUMNAS = 4;
+const BILLETE_FILAS = 4;
+const BILLETE_ANCHO = 130;
+const BILLETE_ALTO = BILLETE_ANCHO * (410 / 360);
+const billetesVolando = [];
+
+function lanzarBillete() {
+  const audio = new Audio('assets/billete.mp3');
+  audio.volume = 1.0;
+  audio.preload = 'auto';
+
+  const billete = {
+    inicio: performance.now(),
+    duracion: BILLETE_DURACION_MS,
+    audio,
+    frame: 0
+  };
+
+  billetesVolando.push(billete);
+
+  audio.currentTime = 0;
+  audio.play().catch(() => {});
+}
+
+function actualizarBilletes(ahora) {
+  for (let i = billetesVolando.length - 1; i >= 0; i--) {
+    const b = billetesVolando[i];
+    const progreso = Math.min(
+      1,
+      Math.max(0, (ahora - b.inicio) / b.duracion)
+    );
+
+    // 16 cuadros repartidos exactamente durante los 2 segundos.
+    b.frame = Math.min(
+      BILLETE_FRAMES - 1,
+      Math.floor(progreso * BILLETE_FRAMES)
+    );
+
+    if (progreso >= 1) {
+      b.audio.pause();
+      b.audio.currentTime = 0;
+      billetesVolando.splice(i, 1);
+    }
+  }
+}
+
+function dibujarBilletes() {
+  if (!imgBillete.complete || imgBillete.naturalWidth <= 0) return;
+
+  const sw = imgBillete.width / BILLETE_COLUMNAS;
+  const sh = imgBillete.height / BILLETE_FILAS;
+
+  for (const b of billetesVolando) {
+    const progreso = Math.min(
+      1,
+      Math.max(0, (performance.now() - b.inicio) / b.duracion)
+    );
+
+    // De esquina inferior izquierda a esquina superior derecha.
+    const inicioX = -BILLETE_ANCHO / 2;
+    const inicioY = canvas.height + BILLETE_ALTO / 2;
+    const finalX = canvas.width + BILLETE_ANCHO / 2;
+    const finalY = -BILLETE_ALTO / 2;
+
+    const x = inicioX + (finalX - inicioX) * progreso;
+    const y = inicioY + (finalY - inicioY) * progreso;
+
+    const columna = b.frame % BILLETE_COLUMNAS;
+    const fila = Math.floor(b.frame / BILLETE_COLUMNAS);
+    const sx = columna * sw;
+    const sy = fila * sh;
+
+    ctx.drawImage(
+      imgBillete,
+      sx, sy, sw, sh,
+      x - BILLETE_ANCHO / 2,
+      y - BILLETE_ALTO / 2,
+      BILLETE_ANCHO,
+      BILLETE_ALTO
+    );
+  }
+}
+
 const audioMusica = new Audio('assets/musica.mp3');
 audioMusica.loop = true;
 audioMusica.volume = 0.4;
@@ -354,40 +441,40 @@ const eventosCaca = [
     imagen: 'assets/5-carinaflores.png'
   },
   {
-    audio: 'assets/9-ivanavescovi.mp3',
-    imagen: 'assets/9-ivanavescovi.png'
+    audio: 'assets/6-ivanavescovi.mp3',
+    imagen: 'assets/6-ivanavescovi.png'
   },
   {
-    audio: 'assets/10-claudiagalera.mp3',
-    imagen: 'assets/10-claudiagalera.png'
+    audio: 'assets/7-claudiagalera.mp3',
+    imagen: 'assets/7-claudiagalera.png'
   },
   {
-    audio: 'assets/11-micaelaarias.mp3',
-    imagen: 'assets/11-micaelaarias.png'
+    audio: 'assets/8-micaelaarias.mp3',
+    imagen: 'assets/8-micaelaarias.png'
   },
   {
-    audio: 'assets/12-walterocana.mp3',
-    imagen: 'assets/12-walterocana.png'
+    audio: 'assets/9-walterocana.mp3',
+    imagen: 'assets/9-walterocana.png'
   },
   {
-    audio: 'assets/13-cintialemarchand.mp3',
-    imagen: 'assets/13-cintialemarchand.png'
+    audio: 'assets/10-cintialemarchand.mp3',
+    imagen: 'assets/10-cintialemarchand.png'
   },
   {
-    audio: 'assets/14-yonatanjara.mp3',
-    imagen: 'assets/14-yonatanjara.png'
+    audio: 'assets/11-yonatanjara.mp3',
+    imagen: 'assets/11-yonatanjara.png'
   },
   {
-    audio: 'assets/15-kiara.mp3',
-    imagen: 'assets/15-kiara.png'
+    audio: 'assets/12-kiara.mp3',
+    imagen: 'assets/12-kiara.png'
   },
   {
-    audio: 'assets/16-sergionova.mp3',
-    imagen: 'assets/16-sergionova.png'
+    audio: 'assets/13-sergionova.mp3',
+    imagen: 'assets/13-sergionova.png'
   },
   {
-    audio: 'assets/17-fabianpoblete.mp3',
-    imagen: 'assets/17-fabianpoblete.png'
+    audio: 'assets/14-fabianpoblete.mp3',
+    imagen: 'assets/14-fabianpoblete.png'
   },
   {
     audio: 'assets/18-albano.mp3',
@@ -651,6 +738,13 @@ function inicializar() {
 
   // Reiniciar contador de cacas para el evento
   cacasComidasDesdeEvento = 0;
+
+  // Limpiar billetes de una partida anterior
+  for (const b of billetesVolando) {
+    b.audio.pause();
+    b.audio.currentTime = 0;
+  }
+  billetesVolando.length = 0;
 
   // Detener evento anterior
   eventoCentroActivo = null;
@@ -962,6 +1056,7 @@ function actualizar(dt, ahora) {
         cacasComidasDesdeEvento = 0;
 
         mostrarEventoCaca();
+        lanzarBillete();
       }
     }
   }
@@ -1395,6 +1490,10 @@ function dibujar(ahora) {
       ctx.fill();
     }
   }
+
+  // ---------- BILLETES VOLANDO ----------
+  // Se dibujan al final para que queden por encima del juego.
+  dibujarBilletes();
 }
 
 // ---------- BUCLE ----------
@@ -1424,6 +1523,7 @@ function bucle(ahora) {
   }
 
   actualizar(dt, ahora);
+  actualizarBilletes(ahora);
   dibujar(ahora);
 
   requestAnimationFrame(bucle);
