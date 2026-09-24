@@ -233,8 +233,21 @@ window.addEventListener('resize', ajustarCanvas);
 const imgJugador = new Image();
 imgJugador.src = 'assets/jugador.png';
 
-const imgEnemigo = new Image();
-imgEnemigo.src = 'assets/enemigo.png';
+const imgFantasmaDerecha = new Image();
+imgFantasmaDerecha.src = 'assets/fantasmaderecha.png';
+
+const imgFantasmaFrente = new Image();
+imgFantasmaFrente.src = 'assets/fantasmafrente.png';
+
+const imgFantasmaIzquierda = new Image();
+imgFantasmaIzquierda.src = 'assets/fantasmaizquierda.png';
+
+const imgFantasmaCentro = new Image();
+imgFantasmaCentro.src = 'assets/fantasmafrente.png';
+
+const FANTASMA_FRAMES = 16;
+const FANTASMA_COLUMNAS = 4;
+const FANTASMA_FILAS = 4;
 
 const imgCaca = new Image();
 imgCaca.src = 'assets/caca.png';
@@ -695,7 +708,7 @@ function inicializar() {
         Math.hypot(
           ca.x - p.x,
           ca.y - p.y
-        ) < CELL
+        ) < CELL * 2
       )
     ) continue;
 
@@ -1226,6 +1239,32 @@ const FILA_DIR = {
   izquierda: 3
 };
 
+function obtenerSpriteFantasma(dir) {
+  switch (dir) {
+    case 'derecha':
+      return imgFantasmaDerecha;
+    case 'izquierda':
+      return imgFantasmaIzquierda;
+    case 'arriba':
+    case 'abajo':
+      return imgFantasmaCentro;
+    default:
+      return imgFantasmaCentro;
+  }
+}
+
+function dibujarSpriteFantasma(img, ent, frame, tamano = CELL) {
+  const sw = img.width / FANTASMA_COLUMNAS;
+  const sh = img.height / FANTASMA_FILAS;
+  const frameSeguro = ((frame % FANTASMA_FRAMES) + FANTASMA_FRAMES) % FANTASMA_FRAMES;
+  const columna = frameSeguro % FANTASMA_COLUMNAS;
+  const fila = Math.floor(frameSeguro / FANTASMA_COLUMNAS);
+  const sx = columna * sw;
+  const sy = fila * sh;
+
+  ctx.drawImage(img, sx, sy, sw, sh, ent.x - tamano / 2, ent.y - tamano / 2, tamano, tamano);
+}
+
 function dibujarSprite(
   img,
   ent,
@@ -1366,7 +1405,7 @@ function dibujar(ahora) {
 
     if (c.recogida) continue;
 
-    const s = CELL * 1.0;
+    const s = CELL * 1.5;
 
     if (
       imgCara.complete &&
@@ -1408,15 +1447,16 @@ function dibujar(ahora) {
 
   for (const en of enemigos) {
 
+    const imgFantasma = obtenerSpriteFantasma(en.dir);
+
     if (
-      imgEnemigo.complete &&
-      imgEnemigo.naturalWidth > 0
+      imgFantasma.complete &&
+      imgFantasma.naturalWidth > 0
     ) {
 
-      dibujarSprite(
-        imgEnemigo,
+      dibujarSpriteFantasma(
+        imgFantasma,
         en,
-        en.dir,
         frameEnemigo,
         tamPersonaje
       );
@@ -1520,7 +1560,7 @@ function bucle(ahora) {
       (frameJugador + 1) % 4;
 
     frameEnemigo =
-      (frameEnemigo + 1) % 4;
+      (frameEnemigo + 1) % FANTASMA_FRAMES;
 
     ultimoFrameMs = ahora;
   }
