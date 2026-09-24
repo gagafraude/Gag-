@@ -202,6 +202,10 @@ const PUNTOS_CACA    = 10;
 // Cada 6 cacas comidas aparece una imagen y su audio
 const CACA_PARA_EVENTO = 5;
 
+const CENTRO_IMPACTO_ESCALA = 1.10;
+const CENTRO_IMPACTO_DURACION = 220;
+let centroImpactoInicio = 0;
+
 const CENTRO = { c1: 3, c2: 6, r1: 6, r2: 9 };
 const ASPECTO_CENTRO = 1920 / 1080;
 
@@ -747,6 +751,7 @@ function inicializar() {
 
   // Reiniciar contador de cacas para el evento
   cacasComidasDesdeEvento = 0;
+  centroImpactoInicio = 0;
 
   // Nueva bolsa aleatoria para esta partida. Cada foto/audio
   // aparecerá una sola vez antes de volver a mezclarse.
@@ -1070,6 +1075,7 @@ function actualizar(dt, ahora) {
       ) {
 
         cacasComidasDesdeEvento = 0;
+        centroImpactoInicio = performance.now();
 
         mostrarEventoCaca();
         lanzarBillete();
@@ -1324,43 +1330,39 @@ function dibujar(ahora) {
   //  CENTRO: VIDEO O IMAGEN DEL EVENTO
   // ==========================================================
 
-  if (
-    eventoCentroActivo &&
-    eventoCentroActivo.img.complete &&
-    eventoCentroActivo.img.naturalWidth > 0
-  ) {
-
-    // Mostrar la imagen correspondiente al audio
-    ctx.drawImage(
-      eventoCentroActivo.img,
-      rect.x,
-      rect.y,
-      rect.w,
-      rect.h
-    );
-
-  } else if (videoCentro.readyState >= 2) {
-
-    // Video central normal
-    ctx.drawImage(
-      videoCentro,
-      rect.x,
-      rect.y,
-      rect.w,
-      rect.h
-    );
-
-  } else {
-
-    ctx.fillStyle = COLOR_PARED;
-
-    ctx.fillRect(
-      rect.x,
-      rect.y,
-      rect.w,
-      rect.h
-    );
+  let escalaCentro = 1;
+  if (centroImpactoInicio > 0) {
+    const transcurrido = ahora - centroImpactoInicio;
+    if (transcurrido < CENTRO_IMPACTO_DURACION) {
+      const p = transcurrido / CENTRO_IMPACTO_DURACION;
+      if (p < 0.22) {
+        escalaCentro = 1 + (CENTRO_IMPACTO_ESCALA - 1) * (p / 0.22);
+      } else {
+        const t = (p - 0.22) / 0.78;
+        escalaCentro = 1 + (CENTRO_IMPACTO_ESCALA - 1) * (1 - t * t);
+      }
+    } else {
+      centroImpactoInicio = 0;
+    }
   }
+
+  const centroX = rect.x + rect.w / 2;
+  const centroY = rect.y + rect.h / 2;
+  const centroW = rect.w * escalaCentro;
+  const centroH = rect.h * escalaCentro;
+  const centroDrawX = centroX - centroW / 2;
+  const centroDrawY = centroY - centroH / 2;
+
+  ctx.save();
+  if (eventoCentroActivo && eventoCentroActivo.img.complete && eventoCentroActivo.img.naturalWidth > 0) {
+    ctx.drawImage(eventoCentroActivo.img, centroDrawX, centroDrawY, centroW, centroH);
+  } else if (videoCentro.readyState >= 2) {
+    ctx.drawImage(videoCentro, centroDrawX, centroDrawY, centroW, centroH);
+  } else {
+    ctx.fillStyle = COLOR_PARED;
+    ctx.fillRect(centroDrawX, centroDrawY, centroW, centroH);
+  }
+  ctx.restore();
 
   // ---------- CACAS ----------
   for (const c of cacas) {
