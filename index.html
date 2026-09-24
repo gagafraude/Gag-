@@ -2,1126 +2,2852 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
 <title>Come Caca</title>
+
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body {
-    height: 100%;
-    background: #a9a9a9;
-    font-family: system-ui, sans-serif;
-    overflow: hidden;
-    user-select: none;
-    touch-action: none;
-  }
 
-  #hud {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    font-size: 16px;
-    color: #222;
-    z-index: 10;
-    background: rgba(255,255,255,0.4);
-  }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
 
-  #juego {
-    display: block;
-    width: 100vw;
-    height: 100vh;
-    touch-action: none;
-  }
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 
-  /* ---------- D-PAD ---------- */
-  #dpad {
-    position: fixed;
-    right: 16px;
-    bottom: 24px;
-    width: 170px;
-    height: 170px;
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: 1fr 1fr 1fr;
-    grid-template-areas:
-      ".  arriba  ."
-      "izq .    der"
-      ".  abajo   .";
-    gap: 4px;
-    z-index: 20;
-  }
+  background: #a9a9a9;
 
-  .btn-dir {
-    background: rgba(0,0,0,0.35);
-    border: none;
-    color: #fff;
-    font-size: 22px;
-    border-radius: 10px;
-    touch-action: none;
-    user-select: none;
-  }
+  font-family: Arial, sans-serif;
 
-  .btn-dir:active { background: rgba(0,0,0,0.6); }
-  .btn-dir[data-dir="arriba"]    { grid-area: arriba; }
-  .btn-dir[data-dir="abajo"]     { grid-area: abajo; }
-  .btn-dir[data-dir="izquierda"] { grid-area: izq; }
-  .btn-dir[data-dir="derecha"]   { grid-area: der; }
+  user-select: none;
+  touch-action: none;
+}
 
-  /* ---------- CONTADOR DE CACAS ---------- */
-  #contadorCacas {
-    display: inline-block;
-    color: #222;
-    font-size: 22px;
-    font-weight: bold;
-    line-height: 1;
-  }
 
-  /* ---------- OVERLAYS ---------- */
-  .overlay {
-    position: fixed;
-    inset: 0;
-    background: #000;
-    display: flex;
-    flex-direction: column;
-    z-index: 100;
-  }
+/* =========================================================
+   HUD
+   ========================================================= */
 
-  .overlay.oculto { display: none; }
+#hud {
 
-  .overlay img, .overlay video {
-    flex: 1;
-    width: 100%;
-    object-fit: cover;
-    min-height: 0;
-  }
+  position: fixed;
 
-  #imgDerrota {
-    object-fit: contain;
-    background: #000;
-  }
+  top: 0;
+  left: 0;
 
-  #inicio img {
-    object-fit: contain;
-    background: #000;
-  }
+  width: 100%;
 
-  #vidVictoria {
-    object-fit: contain;
-    background: #000;
-  }
+  height: 40px;
 
-  .acciones {
-    background: #111;
-    padding: 12px;
-    display: flex;
-    justify-content: center;
-  }
+  z-index: 50;
 
-  .boton {
-    padding: 14px 40px;
-    font-size: 20px;
-    font-weight: bold;
-    border: none;
-    border-radius: 8px;
-    background: #c0392b;
-    color: #fff;
-    cursor: pointer;
-  }
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  pointer-events: none;
+}
+
+
+/* =========================================================
+   BARRA DE PROGRESO
+   ========================================================= */
+
+#barraProgresoContenedor {
+
+  position: absolute;
+
+  left: 16px;
+  right: 16px;
+
+  top: 7px;
+
+  height: 26px;
+
+  background: rgba(0, 0, 0, 0.35);
+
+  border: 2px solid rgba(255,255,255,0.8);
+
+  border-radius: 14px;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 2px 5px rgba(0,0,0,0.35);
+}
+
+
+#barraProgreso {
+
+  width: 0%;
+
+  height: 100%;
+
+  background: #24d83d;
+
+  border-radius: 11px;
+
+  transition:
+    width 0.18s ease-out;
+
+  box-shadow:
+    inset 0 2px 2px rgba(255,255,255,0.35);
+
+}
+
+
+/* =========================================================
+   CONTADOR 1-5
+   ========================================================= */
+
+#contadorCacas {
+
+  position: fixed;
+
+  top: 39px;
+
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  z-index: 60;
+
+  min-width: 32px;
+
+  padding: 3px 9px;
+
+  text-align: center;
+
+  font-size: 20px;
+
+  font-weight: bold;
+
+  color: #222;
+
+  background:
+    rgba(255,255,255,0.72);
+
+  border-radius: 8px;
+
+  pointer-events: none;
+}
+
+
+/* =========================================================
+   CANVAS
+   ========================================================= */
+
+#juego {
+
+  position: fixed;
+
+  top: 0;
+  left: 0;
+
+  display: block;
+
+  width: 100vw;
+  height: 100vh;
+
+  touch-action: none;
+}
+
+
+/* =========================================================
+   D-PAD
+   ========================================================= */
+
+#dpad {
+
+  position: fixed;
+
+  right: 16px;
+  bottom: 22px;
+
+  width: 170px;
+  height: 170px;
+
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr 1fr;
+
+  grid-template-rows:
+    1fr 1fr 1fr;
+
+  grid-template-areas:
+
+    ". arriba ."
+
+    "izquierda centro derecha"
+
+    ". abajo .";
+
+  gap: 5px;
+
+  z-index: 80;
+}
+
+
+.btn-dir {
+
+  border: none;
+
+  border-radius: 12px;
+
+  background:
+    rgba(0,0,0,0.40);
+
+  color: white;
+
+  font-size: 24px;
+
+  font-weight: bold;
+
+  touch-action: none;
+
+  user-select: none;
+
+  cursor: pointer;
+}
+
+
+.btn-dir:active {
+
+  background:
+    rgba(0,0,0,0.70);
+
+  transform:
+    scale(0.95);
+}
+
+
+.btn-dir[data-dir="arriba"] {
+  grid-area: arriba;
+}
+
+
+.btn-dir[data-dir="abajo"] {
+  grid-area: abajo;
+}
+
+
+.btn-dir[data-dir="izquierda"] {
+  grid-area: izquierda;
+}
+
+
+.btn-dir[data-dir="derecha"] {
+  grid-area: derecha;
+}
+
+
+/* =========================================================
+   OVERLAYS
+   ========================================================= */
+
+.overlay {
+
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 100;
+
+  background: #000;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+}
+
+
+.overlay.oculto {
+  display: none;
+}
+
+
+.overlay img,
+.overlay video {
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+
+  background: #000;
+}
+
+
+.acciones {
+
+  position: absolute;
+
+  bottom: 25px;
+
+  left: 0;
+  right: 0;
+
+  display: flex;
+
+  justify-content: center;
+}
+
+
+.boton {
+
+  padding:
+    14px 35px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  background:
+    #c0392b;
+
+  color: white;
+
+  font-size: 20px;
+
+  font-weight: bold;
+
+  cursor: pointer;
+}
+
+
+.boton:active {
+
+  transform:
+    scale(0.95);
+}
+
 </style>
 </head>
 
+
 <body>
 
-  <div id="hud">
-    <span id="contadorCacas">0</span>
+
+<!-- =========================================================
+     HUD
+     ========================================================= -->
+
+<div id="hud">
+
+  <div id="barraProgresoContenedor">
+
+    <div id="barraProgreso"></div>
+
   </div>
 
-  <canvas id="juego"></canvas>
+</div>
 
-  <!-- Controles táctiles -->
-  <div id="dpad">
-    <button class="btn-dir" data-dir="arriba">▲</button>
-    <button class="btn-dir" data-dir="izquierda">◀</button>
-    <button class="btn-dir" data-dir="derecha">▶</button>
-    <button class="btn-dir" data-dir="abajo">▼</button>
+
+<!-- Contador independiente de eventos -->
+
+<div id="contadorCacas">0</div>
+
+
+<!-- =========================================================
+     CANVAS
+     ========================================================= -->
+
+<canvas id="juego"></canvas>
+
+
+<!-- =========================================================
+     D-PAD
+     ========================================================= -->
+
+<div id="dpad">
+
+  <button
+    class="btn-dir"
+    data-dir="arriba">
+    ▲
+  </button>
+
+  <button
+    class="btn-dir"
+    data-dir="izquierda">
+    ◀
+  </button>
+
+  <button
+    class="btn-dir"
+    data-dir="derecha">
+    ▶
+  </button>
+
+  <button
+    class="btn-dir"
+    data-dir="abajo">
+    ▼
+  </button>
+
+</div>
+
+
+<!-- =========================================================
+     INICIO
+     ========================================================= -->
+
+<div
+  id="inicio"
+  class="overlay">
+
+  <img
+    src="assets/inicio.png"
+    alt="Come Caca">
+
+  <div class="acciones">
+
+    <button
+      id="btnJugar"
+      class="boton">
+
+      JUGAR
+
+    </button>
+
   </div>
 
-  <!-- PANTALLA DE INICIO -->
-  <div id="inicio" class="overlay">
-    <img src="assets/inicio.png" alt="Come Caca">
-    <div class="acciones">
-      <button id="btnJugar" class="boton">JUGAR</button>
-    </div>
+</div>
+
+
+<!-- =========================================================
+     DERROTA
+     ========================================================= -->
+
+<div
+  id="derrota"
+  class="overlay oculto">
+
+  <img
+    id="imgDerrota"
+    src="assets/derrota.png"
+    alt="Derrota">
+
+  <div class="acciones">
+
+    <button
+      id="btnReiniciar"
+      class="boton">
+
+      REINICIAR
+
+    </button>
+
   </div>
 
-  <!-- Pantalla de derrota -->
-  <div id="derrota" class="overlay oculto">
-    <img id="imgDerrota" src="assets/derrota.png" alt="Perdiste">
-    <div class="acciones">
-      <button id="btnReiniciar" class="boton">REINICIAR</button>
-    </div>
+</div>
+
+
+<!-- =========================================================
+     VICTORIA
+     ========================================================= -->
+
+<div
+  id="victoria"
+  class="overlay oculto">
+
+  <video
+    id="vidVictoria"
+    src="assets/victoria.mp4"
+    playsinline
+    loop>
+  </video>
+
+  <div class="acciones">
+
+    <button
+      id="btnSiguiente"
+      class="boton">
+
+      JUGAR OTRA VEZ
+
+    </button>
+
   </div>
 
-  <!-- Pantalla de victoria -->
-  <div id="victoria" class="overlay oculto">
-    <video id="vidVictoria" src="assets/victoria.mp4" loop playsinline></video>
-    <div class="acciones">
-      <button id="btnSiguiente" class="boton">JUGAR OTRA VEZ</button>
-    </div>
-  </div>
+</div>
+
 
 <script>
-// ============================================================
-//  COME CACA — juego estilo Pac-Man vertical
-// ============================================================
 
-// ---------- CONFIGURACIÓN ----------
+/* =========================================================
+   CONFIGURACIÓN
+   ========================================================= */
+
 const COLS = 10;
+
 const ROWS = 16;
 
+
 const COLOR_FONDO = '#a9a9a9';
+
 const COLOR_PARED = '#3a3a3a';
 
+
 const VEL_JUGADOR = 1.5;
+
 const VEL_ENEMIGO = 0.8;
 
+
 const ESCALA_PERSONAJE = 2.5;
-const MARGEN_PARED = 0;
 
-const PROB_CACA      = 0.7;
-const NUM_CARAS      = 4;
+
+const PROB_CACA = 0.7;
+
+
+const NUM_CARAS = 4;
+
+
 const CARAS_PARALIZA = 3000;
-const ENEMIGOS_INI   = 4;
-const ENEMIGOS_CADA  = 5000;
-const VIDAS_INI      = 3;
-const PUNTOS_CACA    = 10;
 
-// Cada 6 cacas comidas aparece una imagen y su audio
+
+const ENEMIGOS_INI = 4;
+
+const ENEMIGOS_CADA = 5000;
+
+
+const VIDAS_INI = 3;
+
+
+const PUNTOS_CACA = 10;
+
+
+/*
+   Cada 5 cacas dispara un evento.
+*/
+
 const CACA_PARA_EVENTO = 5;
 
-const CENTRO_IMPACTO_ESCALA = 1.10;
-const CENTRO_IMPACTO_DURACION = 220;
+
+/* =========================================================
+   CENTRO
+   ========================================================= */
+
+const CENTRO = {
+
+  c1: 3,
+  c2: 6,
+
+  r1: 6,
+  r2: 9
+};
+
+
+const ASPECTO_CENTRO =
+  1920 / 1080;
+
+
+const CENTRO_IMPACTO_ESCALA =
+  1.10;
+
+
+const CENTRO_IMPACTO_DURACION =
+  220;
+
+
 let centroImpactoInicio = 0;
 
-const CENTRO = { c1: 3, c2: 6, r1: 6, r2: 9 };
-const ASPECTO_CENTRO = 1920 / 1080;
 
-// ---------- CANVAS ----------
-const canvas = document.getElementById('juego');
-const ctx = canvas.getContext('2d');
+/* =========================================================
+   CANVAS
+   ========================================================= */
 
-let CELL = 0, OFFSET_X = 0, OFFSET_Y = 0;
+const canvas =
+  document.getElementById(
+    'juego'
+  );
+
+
+const ctx =
+  canvas.getContext(
+    '2d'
+  );
+
+
+let CELL = 0;
+
+let OFFSET_X = 0;
+
+let OFFSET_Y = 0;
+
 
 function ajustarCanvas() {
-  const w = window.innerWidth;
-  const h = window.innerHeight - 40;
 
-  canvas.width  = w;
+  const w =
+    window.innerWidth;
+
+
+  const h =
+    window.innerHeight;
+
+
+  canvas.width = w;
+
   canvas.height = h;
 
-  const cellW = w / COLS;
-  const cellH = h / ROWS;
 
-  CELL = Math.floor(Math.min(cellW, cellH));
+  const cellW =
+    w / COLS;
 
-  OFFSET_X = Math.floor((w - CELL * COLS) / 2);
-  OFFSET_Y = Math.floor((h - CELL * ROWS) / 2) + 20;
+
+  const cellH =
+    (h - 40) / ROWS;
+
+
+  CELL =
+    Math.floor(
+      Math.min(
+        cellW,
+        cellH
+      )
+    );
+
+
+  OFFSET_X =
+    Math.floor(
+      (w -
+        CELL * COLS) / 2
+    );
+
+
+  OFFSET_Y =
+    Math.floor(
+      (
+        h -
+        CELL * ROWS
+      ) / 2
+    );
 }
 
-window.addEventListener('resize', ajustarCanvas);
 
-// ---------- RECURSOS ----------
-const imgJugador = new Image();
-imgJugador.src = 'assets/jugador.png';
+window.addEventListener(
+  'resize',
+  ajustarCanvas
+);
 
-const imgFantasmaDerecha = new Image();
-imgFantasmaDerecha.src = 'assets/fantasmaderecha.png';
 
-const imgFantasmaFrente = new Image();
-imgFantasmaFrente.src = 'assets/fantasmafrente.png';
+/* =========================================================
+   FONDO
+   ========================================================= */
 
-const imgFantasmaIzquierda = new Image();
-imgFantasmaIzquierda.src = 'assets/fantasmaizquierda.png';
+/*
+   ESTA ES LA IMAGEN QUE AHORA
+   SE UTILIZA COMO FONDO DEL JUEGO.
+*/
 
-const imgFantasmaCentro = new Image();
-imgFantasmaCentro.src = 'assets/fantasmafrente.png';
+const imgFondo =
+  new Image();
+
+
+imgFondo.src =
+  'assets/fondo.png';
+
+
+/* =========================================================
+   JUGADOR
+   ========================================================= */
+
+const imgJugador =
+  new Image();
+
+
+imgJugador.src =
+  'assets/jugador.png';
+
+
+/* =========================================================
+   FANTASMAS
+   ========================================================= */
+
+const imgFantasmaDerecha =
+  new Image();
+
+
+imgFantasmaDerecha.src =
+  'assets/fantasmaderecha.png';
+
+
+const imgFantasmaFrente =
+  new Image();
+
+
+imgFantasmaFrente.src =
+  'assets/fantasmafrente.png';
+
+
+const imgFantasmaIzquierda =
+  new Image();
+
+
+imgFantasmaIzquierda.src =
+  'assets/fantasmaizquierda.png';
+
+
+const imgFantasmaCentro =
+  new Image();
+
+
+imgFantasmaCentro.src =
+  'assets/fantasmafrente.png';
+
 
 const FANTASMA_FRAMES = 16;
+
 const FANTASMA_COLUMNAS = 4;
+
 const FANTASMA_FILAS = 4;
 
-const imgCaca = new Image();
-imgCaca.src = 'assets/caca.png';
 
-const imgCara = new Image();
-imgCara.src = 'assets/cara.png';
+/* =========================================================
+   CACAS
+   ========================================================= */
 
-// ---------- BILLETE VOLADOR (sprite sheet 4x4 = 16 frames) ----------
-const imgBillete = new Image();
-imgBillete.src = 'assets/billete.png';
-const BILLETE_DURACION_MS = 2000;
-const BILLETE_FRAMES = 16;
-const BILLETE_LOOPS = 6;
-const BILLETE_COLUMNAS = 4;
-const BILLETE_FILAS = 4;
-const BILLETE_ANCHO = 130;
-const BILLETE_ALTO = BILLETE_ANCHO * (410 / 360);
+const imgCaca =
+  new Image();
+
+
+imgCaca.src =
+  'assets/caca.png';
+
+
+/* =========================================================
+   CARAS
+   ========================================================= */
+
+const imgCara =
+  new Image();
+
+
+imgCara.src =
+  'assets/cara.png';
+
+
+/* =========================================================
+   BILLETE
+   ========================================================= */
+
+const imgBillete =
+  new Image();
+
+
+imgBillete.src =
+  'assets/billete.png';
+
+
+const BILLETE_DURACION_MS =
+  2000;
+
+
+const BILLETE_FRAMES =
+  16;
+
+
+const BILLETE_LOOPS =
+  6;
+
+
+const BILLETE_COLUMNAS =
+  4;
+
+
+const BILLETE_FILAS =
+  4;
+
+
+const BILLETE_ANCHO =
+  130;
+
+
+const BILLETE_ALTO =
+  BILLETE_ANCHO *
+  (410 / 360);
+
+
 const billetesVolando = [];
 
+
 function lanzarBillete() {
-  const audio = new Audio('assets/billete.mp3');
-  audio.volume = 1.0;
-  audio.preload = 'auto';
+
+  const audio =
+    new Audio(
+      'assets/billete.mp3'
+    );
+
+
+  audio.volume = 1;
+
 
   const billete = {
-    inicio: performance.now(),
-    duracion: BILLETE_DURACION_MS,
+
+    inicio:
+      performance.now(),
+
+    duracion:
+      BILLETE_DURACION_MS,
+
     audio,
+
     frame: 0
   };
 
-  billetesVolando.push(billete);
 
-  audio.currentTime = 0;
-  audio.play().catch(() => {});
+  billetesVolando.push(
+    billete
+  );
+
+
+  audio.play()
+    .catch(() => {});
 }
 
-function actualizarBilletes(ahora) {
-  for (let i = billetesVolando.length - 1; i >= 0; i--) {
-    const b = billetesVolando[i];
-    const progreso = Math.min(
-      1,
-      Math.max(0, (ahora - b.inicio) / b.duracion)
-    );
 
-    // 32 cuadros en total: el sprite sheet de 16 cuadros se reproduce 2 veces
-    // durante los 2 segundos completos del vuelo.
-    const totalFrames = BILLETE_FRAMES * BILLETE_LOOPS;
-    const frameTotal = Math.min(
-      totalFrames - 1,
-      Math.floor(progreso * totalFrames)
-    );
-    b.frame = frameTotal % BILLETE_FRAMES;
+function actualizarBilletes(
+  ahora
+) {
 
-    if (progreso >= 1) {
+  for (
+    let i =
+      billetesVolando.length - 1;
+
+    i >= 0;
+
+    i--
+  ) {
+
+    const b =
+      billetesVolando[i];
+
+
+    const progreso =
+      Math.min(
+        1,
+
+        Math.max(
+          0,
+
+          (
+            ahora -
+            b.inicio
+          ) /
+          b.duracion
+        )
+      );
+
+
+    const totalFrames =
+      BILLETE_FRAMES *
+      BILLETE_LOOPS;
+
+
+    const frameTotal =
+      Math.min(
+
+        totalFrames - 1,
+
+        Math.floor(
+          progreso *
+          totalFrames
+        )
+      );
+
+
+    b.frame =
+      frameTotal %
+      BILLETE_FRAMES;
+
+
+    if (
+      progreso >= 1
+    ) {
+
       b.audio.pause();
-      b.audio.currentTime = 0;
-      billetesVolando.splice(i, 1);
+
+      b.audio.currentTime =
+        0;
+
+
+      billetesVolando.splice(
+        i,
+        1
+      );
     }
   }
 }
 
+
 function dibujarBilletes() {
-  if (!imgBillete.complete || imgBillete.naturalWidth <= 0) return;
 
-  const sw = imgBillete.width / BILLETE_COLUMNAS;
-  const sh = imgBillete.height / BILLETE_FILAS;
+  if (
+    !imgBillete.complete ||
+    imgBillete.naturalWidth <= 0
+  ) return;
 
-  for (const b of billetesVolando) {
-    const progreso = Math.min(
-      1,
-      Math.max(0, (performance.now() - b.inicio) / b.duracion)
-    );
 
-    // De esquina inferior izquierda a esquina superior derecha.
-    const inicioX = -BILLETE_ANCHO / 2;
-    const inicioY = canvas.height + BILLETE_ALTO / 2;
-    const finalX = canvas.width + BILLETE_ANCHO / 2;
-    const finalY = -BILLETE_ALTO / 2;
+  const sw =
+    imgBillete.width /
+    BILLETE_COLUMNAS;
 
-    const x = inicioX + (finalX - inicioX) * progreso;
-    const y = inicioY + (finalY - inicioY) * progreso;
 
-    const columna = b.frame % BILLETE_COLUMNAS;
-    const fila = Math.floor(b.frame / BILLETE_COLUMNAS);
-    const sx = columna * sw;
-    const sy = fila * sh;
+  const sh =
+    imgBillete.height /
+    BILLETE_FILAS;
+
+
+  for (
+    const b of billetesVolando
+  ) {
+
+    const progreso =
+      Math.min(
+
+        1,
+
+        Math.max(
+
+          0,
+
+          (
+            performance.now() -
+            b.inicio
+          ) /
+          b.duracion
+        )
+      );
+
+
+    const inicioX =
+      -BILLETE_ANCHO / 2;
+
+
+    const inicioY =
+      canvas.height +
+      BILLETE_ALTO / 2;
+
+
+    const finalX =
+      canvas.width +
+      BILLETE_ANCHO / 2;
+
+
+    const finalY =
+      -BILLETE_ALTO / 2;
+
+
+    const x =
+      inicioX +
+      (
+        finalX -
+        inicioX
+      ) *
+      progreso;
+
+
+    const y =
+      inicioY +
+      (
+        finalY -
+        inicioY
+      ) *
+      progreso;
+
+
+    const columna =
+      b.frame %
+      BILLETE_COLUMNAS;
+
+
+    const fila =
+      Math.floor(
+        b.frame /
+        BILLETE_COLUMNAS
+      );
+
+
+    const sx =
+      columna * sw;
+
+
+    const sy =
+      fila * sh;
+
 
     ctx.drawImage(
+
       imgBillete,
-      sx, sy, sw, sh,
-      x - BILLETE_ANCHO / 2,
-      y - BILLETE_ALTO / 2,
+
+      sx,
+      sy,
+
+      sw,
+      sh,
+
+      x -
+        BILLETE_ANCHO / 2,
+
+      y -
+        BILLETE_ALTO / 2,
+
       BILLETE_ANCHO,
+
       BILLETE_ALTO
     );
   }
 }
 
-const audioMusica = new Audio('assets/musica.mp3');
+
+/* =========================================================
+   AUDIO
+   ========================================================= */
+
+const audioMusica =
+  new Audio(
+    'assets/musica.mp3'
+  );
+
+
 audioMusica.loop = true;
+
 audioMusica.volume = 0.4;
 
-const audioComer = new Audio('assets/comer.mp3');
+
+const audioComer =
+  new Audio(
+    'assets/comer.mp3'
+  );
+
+
 audioComer.volume = 0.7;
 
-const audioCaja = new Audio('assets/caja.mp3');
+
+const audioCaja =
+  new Audio(
+    'assets/caja.mp3'
+  );
+
+
 audioCaja.volume = 0.7;
+
 
 const audiosPedo = [];
 
-for (let i = 1; i <= 10; i++) {
-  const a = new Audio(`assets/pedo${i}.mp3`);
-  a.volume = 0.5;
-  audiosPedo.push(a);
+
+for (
+  let i = 1;
+  i <= 10;
+  i++
+) {
+
+  const audio =
+    new Audio(
+      `assets/pedo${i}.mp3`
+    );
+
+
+  audio.volume = 0.5;
+
+
+  audiosPedo.push(
+    audio
+  );
 }
+
 
 let ultimoPedoMs = 0;
 
+
 function reproducirPedo() {
-  const ahora = performance.now();
 
-  if (ahora - ultimoPedoMs < 180) return;
+  const ahora =
+    performance.now();
 
-  ultimoPedoMs = ahora;
 
-  const a = audiosPedo[Math.floor(Math.random() * audiosPedo.length)];
+  if (
+    ahora -
+    ultimoPedoMs <
+    180
+  ) return;
 
-  try {
-    a.currentTime = 0;
-    a.play();
-  } catch(e) {}
+
+  ultimoPedoMs =
+    ahora;
+
+
+  const audio =
+    audiosPedo[
+      Math.floor(
+        Math.random() *
+        audiosPedo.length
+      )
+    ];
+
+
+  audio.currentTime = 0;
+
+
+  audio.play()
+    .catch(() => {});
 }
 
-const audioMuerte = new Audio('assets/muerte.mp3');
+
+const audioMuerte =
+  new Audio(
+    'assets/muerte.mp3'
+  );
+
+
 audioMuerte.volume = 0.7;
 
-const audioPedoLargo = new Audio('assets/pedo-largo.mp3');
+
+const audioPedoLargo =
+  new Audio(
+    'assets/pedo-largo.mp3'
+  );
+
+
 audioPedoLargo.volume = 0.7;
 
-// ---------- AUDIO DE DERROTA ----------
-const audioDerrota = new Audio('assets/derrotatobias.mp3');
-audioDerrota.volume = 1.0;
-audioDerrota.preload = 'auto';
 
-// ---------- VIDEO CENTRAL ----------
-const videoCentro = document.createElement('video');
-videoCentro.src = 'assets/centro.mp4';
-videoCentro.loop = true;
-videoCentro.muted = true;
-videoCentro.playsInline = true;
-videoCentro.autoplay = true;
-videoCentro.play().catch(()=>{});
+const audioDerrota =
+  new Audio(
+    'assets/derrotatobias.mp3'
+  );
 
-// ============================================================
-//  NUEVO: 18 AUDIOS + 18 IMÁGENES
-// ============================================================
+
+audioDerrota.volume = 1;
+
+
+/* =========================================================
+   VIDEO CENTRAL
+   ========================================================= */
+
+const videoCentro =
+  document.createElement(
+    'video'
+  );
+
+
+videoCentro.src =
+  'assets/centro.mp4';
+
+
+videoCentro.loop =
+  true;
+
+
+videoCentro.muted =
+  true;
+
+
+videoCentro.playsInline =
+  true;
+
+
+videoCentro.autoplay =
+  true;
+
+
+videoCentro.play()
+  .catch(() => {});
+
+
+/* =========================================================
+   EVENTOS
+   ========================================================= */
 
 const eventosCaca = [
+
   {
-    audio: 'assets/1-arielbernatene.mp3',
-    imagen: 'assets/1-arielbernatene.png'
+    audio:
+      'assets/1-arielbernatene.mp3',
+
+    imagen:
+      'assets/1-arielbernatene.png'
   },
+
   {
-    audio: 'assets/2-silvanacalicchia.mp3',
-    imagen: 'assets/2-silvanacalicchia.png'
+    audio:
+      'assets/2-silvanacalicchia.mp3',
+
+    imagen:
+      'assets/2-silvanacalicchia.png'
   },
+
   {
-    audio: 'assets/3-piavivet.mp3',
-    imagen: 'assets/3-piavivet.png'
+    audio:
+      'assets/3-piavivet.mp3',
+
+    imagen:
+      'assets/3-piavivet.png'
   },
+
   {
-    audio: 'assets/4-gastonsantamaria.mp3',
-    imagen: 'assets/4-gastonsantamaria.png'
+    audio:
+      'assets/4-gastonsantamaria.mp3',
+
+    imagen:
+      'assets/4-gastonsantamaria.png'
   },
+
   {
-    audio: 'assets/5-carinaflores.mp3',
-    imagen: 'assets/5-carinaflores.png'
+    audio:
+      'assets/5-carinaflores.mp3',
+
+    imagen:
+      'assets/5-carinaflores.png'
   },
+
   {
-    audio: 'assets/6-ivanavescovi.mp3',
-    imagen: 'assets/6-ivanavescovi.png'
+    audio:
+      'assets/6-ivanavescovi.mp3',
+
+    imagen:
+      'assets/6-ivanavescovi.png'
   },
+
   {
-    audio: 'assets/7-claudiagalera.mp3',
-    imagen: 'assets/7-claudiagalera.png'
+    audio:
+      'assets/7-claudiagalera.mp3',
+
+    imagen:
+      'assets/7-claudiagalera.png'
   },
+
   {
-    audio: 'assets/8-micaelaarias.mp3',
-    imagen: 'assets/8-micaelaarias.png'
+    audio:
+      'assets/8-micaelaarias.mp3',
+
+    imagen:
+      'assets/8-micaelaarias.png'
   },
+
   {
-    audio: 'assets/9-walterocana.mp3',
-    imagen: 'assets/9-walterocana.png'
+    audio:
+      'assets/9-walterocana.mp3',
+
+    imagen:
+      'assets/9-walterocana.png'
   },
+
   {
-    audio: 'assets/10-cintialemarchand.mp3',
-    imagen: 'assets/10-cintialemarchand.png'
+    audio:
+      'assets/10-cintialemarchand.mp3',
+
+    imagen:
+      'assets/10-cintialemarchand.png'
   },
+
   {
-    audio: 'assets/11-yonatanjara.mp3',
-    imagen: 'assets/11-yonatanjara.png'
+    audio:
+      'assets/11-yonatanjara.mp3',
+
+    imagen:
+      'assets/11-yonatanjara.png'
   },
+
   {
-    audio: 'assets/12-kiara.mp3',
-    imagen: 'assets/12-kiara.png'
+    audio:
+      'assets/12-kiara.mp3',
+
+    imagen:
+      'assets/12-kiara.png'
   },
+
   {
-    audio: 'assets/13-sergionova.mp3',
-    imagen: 'assets/13-sergionova.png'
+    audio:
+      'assets/13-sergionova.mp3',
+
+    imagen:
+      'assets/13-sergionova.png'
   },
+
   {
-    audio: 'assets/14-fabianpoblete.mp3',
-    imagen: 'assets/14-fabianpoblete.png'
+    audio:
+      'assets/14-fabianpoblete.mp3',
+
+    imagen:
+      'assets/14-fabianpoblete.png'
   },
+
   {
-    audio: 'assets/18-albano.mp3',
-    imagen: 'assets/18-albano.png'
+    audio:
+      'assets/18-albano.mp3',
+
+    imagen:
+      'assets/18-albano.png'
   }
+
 ];
 
-// Pre-cargar las imágenes
-eventosCaca.forEach(evento => {
-  evento.img = new Image();
-  evento.img.src = evento.imagen;
-});
 
-// Pre-cargar los audios
-eventosCaca.forEach(evento => {
-  evento.audioObj = new Audio(evento.audio);
-  evento.audioObj.preload = 'auto';
-  evento.audioObj.volume = 1.0;
-});
+eventosCaca.forEach(
+  evento => {
 
-// Imagen actualmente mostrada en el centro
-let eventoCentroActivo = null;
+    evento.img =
+      new Image();
 
-// Audio actualmente reproducido
-let audioEventoActivo = null;
+    evento.img.src =
+      evento.imagen;
 
-// Bolsa aleatoria: cada evento aparece una sola vez antes de
-// volver a habilitar todos los eventos.
-let eventosDisponibles = [];
-let ultimoEvento = -1;
+
+    evento.audioObj =
+      new Audio(
+        evento.audio
+      );
+
+
+    evento.audioObj.preload =
+      'auto';
+
+
+    evento.audioObj.volume =
+      1;
+  }
+);
+
+
+let eventoCentroActivo =
+  null;
+
+
+let audioEventoActivo =
+  null;
+
+
+let eventosDisponibles =
+  [];
+
+
+let ultimoEvento =
+  -1;
+
 
 function mezclarEventos() {
-  eventosDisponibles = eventosCaca.map((_, indice) => indice);
 
-  // Fisher-Yates
-  for (let i = eventosDisponibles.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [eventosDisponibles[i], eventosDisponibles[j]] =
-      [eventosDisponibles[j], eventosDisponibles[i]];
-  }
+  eventosDisponibles =
+    eventosCaca.map(
+      (_, i) => i
+    );
 
-  // Si estamos empezando una nueva vuelta y hay más de un evento,
-  // evitamos que el primero sea igual al último de la vuelta anterior.
-  if (eventosDisponibles.length > 1 &&
-      eventosDisponibles[0] === ultimoEvento) {
-    const j = 1 + Math.floor(Math.random() * (eventosDisponibles.length - 1));
-    [eventosDisponibles[0], eventosDisponibles[j]] =
-      [eventosDisponibles[j], eventosDisponibles[0]];
+
+  for (
+    let i =
+      eventosDisponibles.length - 1;
+
+    i > 0;
+
+    i--
+  ) {
+
+    const j =
+      Math.floor(
+        Math.random() *
+        (i + 1)
+      );
+
+
+    [
+      eventosDisponibles[i],
+      eventosDisponibles[j]
+    ] =
+    [
+      eventosDisponibles[j],
+      eventosDisponibles[i]
+    ];
   }
 }
 
-// ---------- ESTADO ----------
-let jugador, enemigos, cacas, caras, puntos, vidas, paralizadoHasta, ultimoEnemigo, juegoActivo;
+
+/* =========================================================
+   ESTADO
+   ========================================================= */
+
+let jugador;
+
+let enemigos;
+
+let cacas;
+
+let caras;
+
+
+let puntos;
+
+let vidas;
+
+
+let paralizadoHasta;
+
+
+let ultimoEnemigo;
+
+
+let juegoActivo;
+
 
 let cacasComidasDesdeEvento = 0;
 
+
+/*
+   ESTAS SON LAS VARIABLES QUE CONTROLAN
+   LA NUEVA BARRA DE PROGRESO.
+*/
+
+let cacasTotalesNivel = 0;
+
+let cacasComidasNivel = 0;
+
+
+/* =========================================================
+   CONTADOR DE EVENTOS
+   ========================================================= */
+
 function actualizarContadorCacas() {
-  const el = document.getElementById("contadorCacas");
-  if (el) el.textContent = cacasComidasDesdeEvento;
+
+  const contador =
+    document.getElementById(
+      'contadorCacas'
+    );
+
+
+  contador.textContent =
+    cacasComidasDesdeEvento;
 }
 
+
+/* =========================================================
+   BARRA DE PROGRESO
+   ========================================================= */
+
+function actualizarBarraProgreso() {
+
+  const barra =
+    document.getElementById(
+      'barraProgreso'
+    );
+
+
+  if (
+    !barra
+  ) return;
+
+
+  if (
+    cacasTotalesNivel <= 0
+  ) {
+
+    barra.style.width =
+      '0%';
+
+    return;
+  }
+
+
+  const porcentaje =
+    (
+      cacasComidasNivel /
+      cacasTotalesNivel
+    ) *
+    100;
+
+
+  const porcentajeSeguro =
+    Math.max(
+      0,
+
+      Math.min(
+        100,
+        porcentaje
+      )
+    );
+
+
+  barra.style.width =
+    porcentajeSeguro + '%';
+}
+
+
+/* =========================================================
+   ANIMACIÓN
+   ========================================================= */
+
 let frameJugador = 0;
+
 let frameEnemigo = 0;
 
 let ultimoFrameMs = 0;
+
 let ultimoMs = 0;
+
 let pasoAcumulado = 0;
 
-// ---------- UTILIDADES ----------
-function esCentro(col, fila) {
-  return col >= CENTRO.c1 &&
-         col <= CENTRO.c2 &&
-         fila >= CENTRO.r1 &&
-         fila <= CENTRO.r2;
+
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+
+function esCentro(
+  col,
+  fila
+) {
+
+  return (
+
+    col >= CENTRO.c1 &&
+
+    col <= CENTRO.c2 &&
+
+    fila >= CENTRO.r1 &&
+
+    fila <= CENTRO.r2
+  );
 }
 
-function esBorde(col, fila) {
-  return col === 0 ||
-         col === COLS - 1 ||
-         fila === 0 ||
-         fila === ROWS - 1;
+
+function esBorde(
+  col,
+  fila
+) {
+
+  return (
+
+    col === 0 ||
+
+    col === COLS - 1 ||
+
+    fila === 0 ||
+
+    fila === ROWS - 1
+  );
 }
 
-function esBloque(col, fila) {
-  return esBorde(col, fila) || esCentro(col, fila);
+
+function esBloque(
+  col,
+  fila
+) {
+
+  return (
+
+    esBorde(
+      col,
+      fila
+    ) ||
+
+    esCentro(
+      col,
+      fila
+    )
+  );
 }
 
-function celdaLibre(col, fila) {
-  return !esBloque(col, fila);
+
+function celdaLibre(
+  col,
+  fila
+) {
+
+  return !esBloque(
+    col,
+    fila
+  );
 }
 
-function centroCelda(col, fila) {
+
+function centroCelda(
+  col,
+  fila
+) {
+
   return {
-    x: OFFSET_X + (col + 0.5) * CELL,
-    y: OFFSET_Y + (fila + 0.5) * CELL
+
+    x:
+      OFFSET_X +
+      (col + 0.5) *
+      CELL,
+
+    y:
+      OFFSET_Y +
+      (fila + 0.5) *
+      CELL
   };
 }
 
-function celdaDePixel(px, py) {
+
+function celdaDePixel(
+  px,
+  py
+) {
+
   return {
-    col: Math.floor((px - OFFSET_X) / CELL),
-    fila: Math.floor((py - OFFSET_Y) / CELL)
+
+    col:
+      Math.floor(
+        (
+          px -
+          OFFSET_X
+        ) /
+        CELL
+      ),
+
+    fila:
+      Math.floor(
+        (
+          py -
+          OFFSET_Y
+        ) /
+        CELL
+      )
   };
 }
+
 
 function rectCentro() {
-  const zonaX = OFFSET_X + CENTRO.c1 * CELL;
-  const zonaY = OFFSET_Y + CENTRO.r1 * CELL;
 
-  const zonaW = (CENTRO.c2 - CENTRO.c1 + 1) * CELL;
-  const zonaH = (CENTRO.r2 - CENTRO.r1 + 1) * CELL;
+  const zonaX =
+    OFFSET_X +
+    CENTRO.c1 *
+    CELL;
 
-  let w = zonaW;
-  let h = w / ASPECTO_CENTRO;
 
-  if (h > zonaH) {
-    h = zonaH;
-    w = h * ASPECTO_CENTRO;
+  const zonaY =
+    OFFSET_Y +
+    CENTRO.r1 *
+    CELL;
+
+
+  const zonaW =
+    (
+      CENTRO.c2 -
+      CENTRO.c1 +
+      1
+    ) *
+    CELL;
+
+
+  const zonaH =
+    (
+      CENTRO.r2 -
+      CENTRO.r1 +
+      1
+    ) *
+    CELL;
+
+
+  let w =
+    zonaW;
+
+
+  let h =
+    w /
+    ASPECTO_CENTRO;
+
+
+  if (
+    h > zonaH
+  ) {
+
+    h =
+      zonaH;
+
+
+    w =
+      h *
+      ASPECTO_CENTRO;
   }
 
-  const x = zonaX + (zonaW - w) / 2;
-  const y = zonaY + (zonaH - h) / 2;
 
-  return { x, y, w, h };
+  return {
+
+    x:
+      zonaX +
+      (
+        zonaW -
+        w
+      ) / 2,
+
+    y:
+      zonaY +
+      (
+        zonaH -
+        h
+      ) / 2,
+
+    w,
+
+    h
+  };
 }
 
-// ============================================================
-//  NUEVO: MOSTRAR EVENTO DE LAS 6 CACAS
-// ============================================================
+
+/* =========================================================
+   EVENTO
+   ========================================================= */
 
 function mostrarEventoCaca() {
 
-  if (!eventosCaca.length) return;
+  if (
+    !eventosCaca.length
+  ) return;
 
-  // Cuando se agotó la bolsa, se vuelve a mezclar completa.
-  // Así no se repite ningún evento hasta haber mostrado todos.
-  if (!eventosDisponibles.length) {
+
+  if (
+    !eventosDisponibles.length
+  ) {
+
     mezclarEventos();
   }
 
-  const indice = eventosDisponibles.pop();
-  ultimoEvento = indice;
 
-  const evento = eventosCaca[indice];
+  const indice =
+    eventosDisponibles.pop();
 
-  eventoCentroActivo = evento;
 
-  // Detener el audio anterior, si hubiera alguno
-  if (audioEventoActivo) {
+  ultimoEvento =
+    indice;
+
+
+  const evento =
+    eventosCaca[indice];
+
+
+  eventoCentroActivo =
+    evento;
+
+
+  if (
+    audioEventoActivo
+  ) {
+
     audioEventoActivo.pause();
-    audioEventoActivo.currentTime = 0;
+
+    audioEventoActivo.currentTime =
+      0;
   }
 
-  audioEventoActivo = evento.audioObj;
 
-  // El video central deja de verse mientras aparece la imagen
+  audioEventoActivo =
+    evento.audioObj;
+
+
   videoCentro.pause();
 
-  // Reiniciar y reproducir el audio correspondiente
-  audioEventoActivo.currentTime = 0;
 
-  audioEventoActivo.play().catch(() => {});
+  audioEventoActivo.currentTime =
+    0;
 
-  // Cuando termina el audio, vuelve el video central
-  audioEventoActivo.onended = () => {
 
-    if (audioEventoActivo === evento.audioObj) {
+  audioEventoActivo.play()
+    .catch(() => {});
 
-      eventoCentroActivo = null;
 
-      videoCentro.currentTime =
-        videoCentro.currentTime;
+  audioEventoActivo.onended =
+    () => {
 
-      videoCentro.play().catch(() => {});
-    }
-  };
+      if (
+        audioEventoActivo ===
+        evento.audioObj
+      ) {
+
+        eventoCentroActivo =
+          null;
+
+
+        videoCentro.play()
+          .catch(() => {});
+      }
+    };
 }
 
-// ---------- INICIALIZACIÓN ----------
+
+/* =========================================================
+   INICIALIZAR
+   ========================================================= */
+
 function inicializar() {
+
   ajustarCanvas();
 
-  const p0 = centroCelda(
-    Math.floor(COLS / 2),
-    ROWS - 3
-  );
+
+  const p0 =
+    centroCelda(
+      Math.floor(
+        COLS / 2
+      ),
+      ROWS - 3
+    );
+
 
   jugador = {
+
     x: p0.x,
+
     y: p0.y,
+
     dir: 'arriba',
-    vel: VEL_JUGADOR,
+
+    vel:
+      VEL_JUGADOR,
+
     vivo: true
   };
 
+
   cacas = [];
 
-  for (let f = 0; f < ROWS; f++) {
-    for (let c = 0; c < COLS; c++) {
 
-      if (!celdaLibre(c, f)) continue;
+  /*
+     CREAR CACAS
+  */
+
+  for (
+    let f = 0;
+    f < ROWS;
+    f++
+  ) {
+
+    for (
+      let c = 0;
+      c < COLS;
+      c++
+    ) {
 
       if (
-        c === Math.floor(COLS / 2) &&
-        f === ROWS - 3
+        !celdaLibre(
+          c,
+          f
+        )
       ) continue;
 
-      if (Math.random() < PROB_CACA) {
-        const p = centroCelda(c, f);
+
+      if (
+
+        c ===
+        Math.floor(
+          COLS / 2
+        ) &&
+
+        f === ROWS - 3
+
+      ) continue;
+
+
+      if (
+        Math.random() <
+        PROB_CACA
+      ) {
+
+        const p =
+          centroCelda(
+            c,
+            f
+          );
+
 
         cacas.push({
+
           x: p.x,
+
           y: p.y,
+
           comida: false
         });
       }
     }
   }
 
+
+  /*
+     ================================================
+     NUEVO NIVEL
+
+     Guardamos cuántas cacas existen
+     en total.
+     ================================================
+  */
+
+  cacasTotalesNivel =
+    cacas.length;
+
+
+  cacasComidasNivel =
+    0;
+
+
+  actualizarBarraProgreso();
+
+
+  /* =====================================================
+     CARAS
+     ===================================================== */
+
   caras = [];
+
 
   let intentos = 0;
 
-  while (caras.length < NUM_CARAS && intentos < 500) {
+
+  while (
+
+    caras.length <
+      NUM_CARAS &&
+
+    intentos < 500
+
+  ) {
 
     intentos++;
 
-    const c = 1 + Math.floor(Math.random() * (COLS - 2));
-    const f = 1 + Math.floor(Math.random() * (ROWS - 2));
 
-    if (!celdaLibre(c, f)) continue;
+    const c =
+      1 +
+      Math.floor(
+        Math.random() *
+        (COLS - 2)
+      );
 
-    const p = centroCelda(c, f);
+
+    const f =
+      1 +
+      Math.floor(
+        Math.random() *
+        (ROWS - 2)
+      );
+
 
     if (
-      Math.hypot(
-        p.x - jugador.x,
-        p.y - jugador.y
-      ) < CELL * 3
-    ) continue;
-
-    if (
-      caras.some(ca =>
-        Math.hypot(
-          ca.x - p.x,
-          ca.y - p.y
-        ) < CELL * 2
+      !celdaLibre(
+        c,
+        f
       )
     ) continue;
 
+
+    const p =
+      centroCelda(
+        c,
+        f
+      );
+
+
+    if (
+
+      Math.hypot(
+
+        p.x -
+        jugador.x,
+
+        p.y -
+        jugador.y
+
+      ) <
+
+      CELL * 3
+
+    ) continue;
+
+
     caras.push({
+
       x: p.x,
+
       y: p.y,
+
       recogida: false
     });
   }
 
+
+  /* =====================================================
+     ENEMIGOS
+     ===================================================== */
+
   enemigos = [];
 
+
   const esquinas = [
-    centroCelda(1, 1),
-    centroCelda(COLS - 2, 1),
-    centroCelda(1, ROWS - 2),
-    centroCelda(COLS - 2, ROWS - 2)
+
+    centroCelda(
+      1,
+      1
+    ),
+
+    centroCelda(
+      COLS - 2,
+      1
+    ),
+
+    centroCelda(
+      1,
+      ROWS - 2
+    ),
+
+    centroCelda(
+      COLS - 2,
+      ROWS - 2
+    )
+
   ];
 
-  for (let i = 0; i < ENEMIGOS_INI; i++) {
+
+  for (
+    let i = 0;
+    i < ENEMIGOS_INI;
+    i++
+  ) {
 
     enemigos.push({
-      x: esquinas[i].x,
-      y: esquinas[i].y,
-      dir: 'abajo',
-      vel: VEL_ENEMIGO
+
+      x:
+        esquinas[i].x,
+
+      y:
+        esquinas[i].y,
+
+      dir:
+        'abajo',
+
+      vel:
+        VEL_ENEMIGO
     });
   }
 
+
   puntos = 0;
-  vidas = VIDAS_INI;
-  paralizadoHasta = 0;
-  ultimoEnemigo = performance.now();
-  juegoActivo = true;
-  pasoAcumulado = 0;
 
-  // Reiniciar contador de cacas para el evento
-  cacasComidasDesdeEvento = 0;
-  centroImpactoInicio = 0;
+  vidas =
+    VIDAS_INI;
 
-  // Nueva bolsa aleatoria para esta partida. Cada foto/audio
-  // aparecerá una sola vez antes de volver a mezclarse.
-  ultimoEvento = -1;
-  eventosDisponibles = [];
+
+  paralizadoHasta =
+    0;
+
+
+  ultimoEnemigo =
+    performance.now();
+
+
+  juegoActivo =
+    true;
+
+
+  pasoAcumulado =
+    0;
+
+
+  /*
+     El contador de eventos
+     vuelve a cero.
+  */
+
+  cacasComidasDesdeEvento =
+    0;
+
+
+  actualizarContadorCacas();
+
+
+  centroImpactoInicio =
+    0;
+
+
+  ultimoEvento =
+    -1;
+
+
+  eventosDisponibles =
+    [];
+
+
   mezclarEventos();
 
-  // Limpiar billetes de una partida anterior
-  for (const b of billetesVolando) {
-    b.audio.pause();
-    b.audio.currentTime = 0;
-  }
-  billetesVolando.length = 0;
 
-  // Detener evento anterior
-  eventoCentroActivo = null;
+  billetesVolando.length =
+    0;
 
-  if (audioEventoActivo) {
+
+  eventoCentroActivo =
+    null;
+
+
+  if (
+    audioEventoActivo
+  ) {
+
     audioEventoActivo.pause();
-    audioEventoActivo.currentTime = 0;
-    audioEventoActivo = null;
+
+    audioEventoActivo.currentTime =
+      0;
+
+    audioEventoActivo =
+      null;
   }
 
-  videoCentro.currentTime = 0;
-  videoCentro.play().catch(()=>{});
 
-  document.getElementById('derrota').classList.add('oculto');
-  document.getElementById('victoria').classList.add('oculto');
+  videoCentro.currentTime =
+    0;
 
-  // Detener cualquier audio de derrota anterior
-  audioDerrota.pause();
-  audioDerrota.currentTime = 0;
 
-  audioMusica.currentTime = 0;
-  audioMusica.play().catch(() => {});
+  videoCentro.play()
+    .catch(() => {});
+
+
+  document
+    .getElementById(
+      'derrota'
+    )
+    .classList.add(
+      'oculto'
+    );
+
+
+  document
+    .getElementById(
+      'victoria'
+    )
+    .classList.add(
+      'oculto'
+    );
+
+
+  audioMusica.currentTime =
+    0;
+
+
+  audioMusica.play()
+    .catch(() => {});
 }
 
-// ---------- APARICIÓN DE ENEMIGOS ----------
+
+/* =========================================================
+   ENEMIGO NUEVO
+   ========================================================= */
+
 function agregarEnemigoAleatorio() {
 
   const candidatos = [];
 
-  for (let c = 1; c < COLS - 1; c++) {
-    for (let f = 1; f < ROWS - 1; f++) {
-      if (celdaLibre(c, f)) {
-        candidatos.push({ c, f });
+
+  for (
+    let c = 1;
+    c < COLS - 1;
+    c++
+  ) {
+
+    for (
+      let f = 1;
+      f < ROWS - 1;
+      f++
+    ) {
+
+      if (
+        celdaLibre(
+          c,
+          f
+        )
+      ) {
+
+        candidatos.push({
+
+          c,
+
+          f
+        });
       }
     }
   }
 
-  if (!candidatos.length) return;
+
+  if (
+    !candidatos.length
+  ) return;
+
 
   const e =
     candidatos[
-      Math.floor(Math.random() * candidatos.length)
+      Math.floor(
+        Math.random() *
+        candidatos.length
+      )
     ];
 
-  const p = centroCelda(e.c, e.f);
+
+  const p =
+    centroCelda(
+      e.c,
+      e.f
+    );
+
 
   enemigos.push({
+
     x: p.x,
+
     y: p.y,
+
     dir: 'abajo',
-    vel: VEL_ENEMIGO
+
+    vel:
+      VEL_ENEMIGO
   });
 }
 
-// ---------- INPUT ----------
+
+/* =========================================================
+   INPUT
+   ========================================================= */
+
 function activarAudioUsuario() {
-  if (audioMusica.paused && juegoActivo) {
-    audioMusica.play().catch(()=>{});
+
+  if (
+    audioMusica.paused &&
+    juegoActivo
+  ) {
+
+    audioMusica.play()
+      .catch(() => {});
   }
 }
 
-document.querySelectorAll('.btn-dir').forEach(btn => {
 
-  const dir = btn.dataset.dir;
+document
+  .querySelectorAll(
+    '.btn-dir'
+  )
+  .forEach(
+    btn => {
 
-  const activar = (ev) => {
+      const dir =
+        btn.dataset.dir;
 
-    ev.preventDefault();
+
+      const activar =
+        ev => {
+
+          ev.preventDefault();
+
+
+          activarAudioUsuario();
+
+
+          if (
+            jugador
+          ) {
+
+            jugador.dir =
+              dir;
+          }
+        };
+
+
+      btn.addEventListener(
+        'touchstart',
+        activar,
+        {
+          passive: false
+        }
+      );
+
+
+      btn.addEventListener(
+        'mousedown',
+        activar
+      );
+    }
+  );
+
+
+window.addEventListener(
+  'keydown',
+  e => {
 
     activarAudioUsuario();
 
-    if (jugador) {
-      jugador.dir = dir;
+
+    if (
+      !jugador
+    ) return;
+
+
+    if (
+      e.key ===
+      'ArrowUp'
+    ) {
+
+      jugador.dir =
+        'arriba';
     }
-  };
 
-  btn.addEventListener(
-    'touchstart',
-    activar,
-    { passive: false }
-  );
 
-  btn.addEventListener(
-    'mousedown',
-    activar
-  );
-});
+    if (
+      e.key ===
+      'ArrowDown'
+    ) {
 
-window.addEventListener('keydown', e => {
+      jugador.dir =
+        'abajo';
+    }
 
-  activarAudioUsuario();
 
-  if (!jugador) return;
+    if (
+      e.key ===
+      'ArrowLeft'
+    ) {
 
-  if (e.key === 'ArrowUp')
-    jugador.dir = 'arriba';
+      jugador.dir =
+        'izquierda';
+    }
 
-  if (e.key === 'ArrowDown')
-    jugador.dir = 'abajo';
 
-  if (e.key === 'ArrowLeft')
-    jugador.dir = 'izquierda';
+    if (
+      e.key ===
+      'ArrowRight'
+    ) {
 
-  if (e.key === 'ArrowRight')
-    jugador.dir = 'derecha';
-});
+      jugador.dir =
+        'derecha';
+    }
+  }
+);
 
-// ---------- MOVIMIENTO ----------
-function moverEntidad(ent, dt) {
+
+/* =========================================================
+   MOVIMIENTO
+   ========================================================= */
+
+function moverEntidad(
+  ent,
+  dt
+) {
 
   const dx =
-    (ent.dir === 'derecha'
-      ? 1
-      : ent.dir === 'izquierda'
-      ? -1
-      : 0) *
+    (
+      ent.dir ===
+      'derecha'
+
+        ? 1
+
+        : ent.dir ===
+          'izquierda'
+
+          ? -1
+
+          : 0
+    ) *
     ent.vel *
     dt;
+
 
   const dy =
-    (ent.dir === 'abajo'
-      ? 1
-      : ent.dir === 'arriba'
-      ? -1
-      : 0) *
+    (
+      ent.dir ===
+      'abajo'
+
+        ? 1
+
+        : ent.dir ===
+          'arriba'
+
+          ? -1
+
+          : 0
+    ) *
     ent.vel *
     dt;
 
-  let movido = 0;
 
-  if (dx !== 0) {
+  if (
+    dx !== 0
+  ) {
 
-    const nuevaX = ent.x + dx;
+    const nuevaX =
+      ent.x + dx;
 
-    const celda = celdaDePixel(
-      nuevaX + Math.sign(dx) * CELL * MARGEN_PARED,
-      ent.y
-    );
 
-    if (celdaLibre(celda.col, celda.fila)) {
+    const celda =
+      celdaDePixel(
+        nuevaX,
+        ent.y
+      );
 
-      ent.x = nuevaX;
-      movido += Math.abs(dx);
+
+    if (
+      celdaLibre(
+        celda.col,
+        celda.fila
+      )
+    ) {
+
+      ent.x =
+        nuevaX;
 
     } else {
 
-      const al = celdaDePixel(ent.x, ent.y);
+      const actual =
+        celdaDePixel(
+          ent.x,
+          ent.y
+        );
+
 
       ent.x =
         centroCelda(
-          al.col,
-          al.fila
+          actual.col,
+          actual.fila
         ).x;
     }
   }
 
-  if (dy !== 0) {
 
-    const nuevaY = ent.y + dy;
+  if (
+    dy !== 0
+  ) {
 
-    const celda = celdaDePixel(
-      ent.x,
-      nuevaY + Math.sign(dy) * CELL * MARGEN_PARED
-    );
+    const nuevaY =
+      ent.y + dy;
 
-    if (celdaLibre(celda.col, celda.fila)) {
 
-      ent.y = nuevaY;
-      movido += Math.abs(dy);
+    const celda =
+      celdaDePixel(
+        ent.x,
+        nuevaY
+      );
+
+
+    if (
+      celdaLibre(
+        celda.col,
+        celda.fila
+      )
+    ) {
+
+      ent.y =
+        nuevaY;
 
     } else {
 
-      const al = celdaDePixel(ent.x, ent.y);
+      const actual =
+        celdaDePixel(
+          ent.x,
+          ent.y
+        );
+
 
       ent.y =
         centroCelda(
-          al.col,
-          al.fila
+          actual.col,
+          actual.fila
         ).y;
     }
   }
-
-  return movido;
 }
 
-// ---------- IA ----------
-function moverEnemigoIA(en, dt) {
 
-  const celda = celdaDePixel(en.x, en.y);
+/* =========================================================
+   IA ENEMIGOS
+   ========================================================= */
 
-  const cx =
-    centroCelda(celda.col, celda.fila).x;
+function moverEnemigoIA(
+  en,
+  dt
+) {
 
-  const cy =
-    centroCelda(celda.col, celda.fila).y;
+  const celda =
+    celdaDePixel(
+      en.x,
+      en.y
+    );
 
-  const alX = Math.abs(en.x - cx) < 2;
-  const alY = Math.abs(en.y - cy) < 2;
 
-  if (alX && alY) {
+  const centro =
+    centroCelda(
+      celda.col,
+      celda.fila
+    );
 
-    const dx = jugador.x - en.x;
-    const dy = jugador.y - en.y;
+
+  const cercaX =
+    Math.abs(
+      en.x -
+      centro.x
+    ) < 2;
+
+
+  const cercaY =
+    Math.abs(
+      en.y -
+      centro.y
+    ) < 2;
+
+
+  if (
+    cercaX &&
+    cercaY
+  ) {
+
+    const dx =
+      jugador.x -
+      en.x;
+
+
+    const dy =
+      jugador.y -
+      en.y;
+
 
     const opciones = [];
 
-    if (Math.abs(dx) > Math.abs(dy)) {
+
+    if (
+      Math.abs(dx) >
+      Math.abs(dy)
+    ) {
 
       opciones.push(
-        dx > 0 ? 'derecha' : 'izquierda'
+
+        dx > 0
+          ? 'derecha'
+          : 'izquierda'
       );
 
+
       opciones.push(
-        dy > 0 ? 'abajo' : 'arriba'
+
+        dy > 0
+          ? 'abajo'
+          : 'arriba'
       );
 
     } else {
 
       opciones.push(
-        dy > 0 ? 'abajo' : 'arriba'
+
+        dy > 0
+          ? 'abajo'
+          : 'arriba'
       );
 
+
       opciones.push(
-        dx > 0 ? 'derecha' : 'izquierda'
+
+        dx > 0
+          ? 'derecha'
+          : 'izquierda'
       );
     }
 
+
     const deltas = {
-      arriba: [0, -1],
-      abajo: [0, 1],
-      izquierda: [-1, 0],
-      derecha: [1, 0]
+
+      arriba:
+        [0, -1],
+
+      abajo:
+        [0, 1],
+
+      izquierda:
+        [-1, 0],
+
+      derecha:
+        [1, 0]
     };
 
-    for (const dir of opciones) {
 
-      const d = deltas[dir];
+    for (
+      const dir of opciones
+    ) {
+
+      const d =
+        deltas[dir];
+
 
       if (
         celdaLibre(
-          celda.col + d[0],
-          celda.fila + d[1]
+
+          celda.col +
+          d[0],
+
+          celda.fila +
+          d[1]
+
         )
       ) {
-        en.dir = dir;
+
+        en.dir =
+          dir;
+
         break;
       }
     }
   }
 
-  moverEntidad(en, dt);
+
+  moverEntidad(
+    en,
+    dt
+  );
 }
 
-// ---------- UPDATE ----------
-function actualizar(dt, ahora) {
 
-  if (!juegoActivo) return;
+/* =========================================================
+   ACTUALIZAR
+   ========================================================= */
 
-  const movido =
-    moverEntidad(jugador, dt);
+function actualizar(
+  dt,
+  ahora
+) {
 
-  pasoAcumulado += movido;
+  if (
+    !juegoActivo
+  ) return;
 
-  if (pasoAcumulado >= CELL * 0.5) {
 
-    pasoAcumulado = 0;
+  moverEntidad(
+    jugador,
+    dt
+  );
+
+
+  pasoAcumulado +=
+    jugador.vel *
+    dt;
+
+
+  if (
+    pasoAcumulado >=
+    CELL * 0.5
+  ) {
+
+    pasoAcumulado =
+      0;
+
 
     reproducirPedo();
   }
 
+
+  /* =======================================================
+     NUEVO ENEMIGO
+     ======================================================= */
+
   if (
-    ahora - ultimoEnemigo >= ENEMIGOS_CADA
+    ahora -
+    ultimoEnemigo >=
+    ENEMIGOS_CADA
   ) {
 
-    ultimoEnemigo = ahora;
+    ultimoEnemigo =
+      ahora;
+
 
     agregarEnemigoAleatorio();
   }
 
-  for (const c of cacas) {
 
-    if (c.comida) continue;
+  /* =======================================================
+     CACAS
+     ======================================================= */
+
+  for (
+    const c of cacas
+  ) {
 
     if (
+      c.comida
+    ) continue;
+
+
+    const distancia =
       Math.hypot(
-        c.x - jugador.x,
-        c.y - jugador.y
-      ) < CELL * 0.7
+
+        c.x -
+        jugador.x,
+
+        c.y -
+        jugador.y
+      );
+
+
+    if (
+      distancia <
+      CELL * 0.7
     ) {
 
-      c.comida = true;
+      c.comida =
+        true;
 
-      puntos += PUNTOS_CACA;
 
-      // Contar las cacas comidas
+      puntos +=
+        PUNTOS_CACA;
+
+
+      /*
+         =================================================
+         BARRA DE PROGRESO
+
+         Aumenta UNA vez por cada
+         caca comida.
+         =================================================
+      */
+
+      cacasComidasNivel++;
+
+
+      actualizarBarraProgreso();
+
+
+      /*
+         =================================================
+         CONTADOR DE EVENTOS
+
+         Este sí vuelve a cero cada 5.
+         =================================================
+      */
+
       cacasComidasDesdeEvento++;
+
+
       actualizarContadorCacas();
 
-      try {
-        audioComer.currentTime = 0;
-        audioComer.play();
-      } catch(e) {}
 
-      // Cada 6 cacas:
-      // elegir aleatoriamente un audio + imagen
+      audioComer.currentTime =
+        0;
+
+
+      audioComer.play()
+        .catch(() => {});
+
+
+      /*
+         Evento cada 5.
+      */
+
       if (
-        cacasComidasDesdeEvento >= CACA_PARA_EVENTO
+        cacasComidasDesdeEvento >=
+        CACA_PARA_EVENTO
       ) {
 
-        cacasComidasDesdeEvento = 0;
-        centroImpactoInicio = performance.now();
+        cacasComidasDesdeEvento =
+          0;
+
+
+        actualizarContadorCacas();
+
+
+        centroImpactoInicio =
+          performance.now();
+
 
         mostrarEventoCaca();
+
+
         lanzarBillete();
       }
     }
   }
 
-  for (const c of caras) {
 
-    if (c.recogida) continue;
+  /* =======================================================
+     CARAS
+     ======================================================= */
+
+  for (
+    const c of caras
+  ) {
+
+    if (
+      c.recogida
+    ) continue;
+
 
     if (
       Math.hypot(
-        c.x - jugador.x,
-        c.y - jugador.y
-      ) < CELL * 0.7
+
+        c.x -
+        jugador.x,
+
+        c.y -
+        jugador.y
+
+      ) <
+      CELL * 0.7
     ) {
 
-      c.recogida = true;
+      c.recogida =
+        true;
+
 
       paralizadoHasta =
-        ahora + CARAS_PARALIZA;
+        ahora +
+        CARAS_PARALIZA;
 
-      try {
-        audioCaja.currentTime = 0;
-        audioCaja.play();
-      } catch(e) {}
+
+      audioCaja.currentTime =
+        0;
+
+
+      audioCaja.play()
+        .catch(() => {});
     }
   }
+
 
   const paralizado =
-    ahora < paralizadoHasta;
+    ahora <
+    paralizadoHasta;
 
-  if (!paralizado) {
-    for (const en of enemigos) {
-      moverEnemigoIA(en, dt);
+
+  if (
+    !paralizado
+  ) {
+
+    for (
+      const enemigo of enemigos
+    ) {
+
+      moverEnemigoIA(
+        enemigo,
+        dt
+      );
     }
   }
 
-  for (const en of enemigos) {
+
+  /* =======================================================
+     COLISIÓN
+     ======================================================= */
+
+  for (
+    const enemigo of enemigos
+  ) {
 
     if (
       Math.hypot(
-        en.x - jugador.x,
-        en.y - jugador.y
-      ) < CELL * 0.8
+
+        enemigo.x -
+        jugador.x,
+
+        enemigo.y -
+        jugador.y
+
+      ) <
+      CELL * 0.8
     ) {
 
       perderVida();
@@ -1130,543 +2856,1015 @@ function actualizar(dt, ahora) {
     }
   }
 
-  if (cacas.every(c => c.comida)) {
+
+  /* =======================================================
+     VICTORIA
+     ======================================================= */
+
+  if (
+
+    cacas.length > 0 &&
+
+    cacas.every(
+      c => c.comida
+    )
+
+  ) {
+
     ganar();
   }
 }
+
+
+/* =========================================================
+   PERDER VIDA
+   ========================================================= */
 
 function perderVida() {
 
   vidas--;
 
-  try {
-    audioMuerte.currentTime = 0;
-    audioMuerte.play();
-  } catch(e) {}
 
-  if (vidas <= 0) {
+  audioMuerte.currentTime =
+    0;
 
-    juegoActivo = false;
+
+  audioMuerte.play()
+    .catch(() => {});
+
+
+  if (
+    vidas <= 0
+  ) {
+
+    juegoActivo =
+      false;
+
 
     audioMusica.pause();
 
-    // Detener evento central si estaba reproduciéndose
-    eventoCentroActivo = null;
 
-    if (audioEventoActivo) {
+    eventoCentroActivo =
+      null;
+
+
+    if (
+      audioEventoActivo
+    ) {
+
       audioEventoActivo.pause();
-      audioEventoActivo.currentTime = 0;
-      audioEventoActivo = null;
+
+      audioEventoActivo.currentTime =
+        0;
+
+      audioEventoActivo =
+        null;
     }
 
-    videoCentro.play().catch(()=>{});
 
-    try {
-      audioPedoLargo.currentTime = 0;
-      audioPedoLargo.play();
-    } catch(e) {}
+    audioDerrota.currentTime =
+      0;
 
-    audioDerrota.currentTime = 0;
-    audioDerrota.play().catch(() => {});
+
+    audioDerrota.play()
+      .catch(() => {});
+
 
     document
-      .getElementById('derrota')
-      .classList.remove('oculto');
+      .getElementById(
+        'derrota'
+      )
+      .classList.remove(
+        'oculto'
+      );
+
 
     return;
   }
 
+
   const p =
     centroCelda(
-      Math.floor(COLS / 2),
+
+      Math.floor(
+        COLS / 2
+      ),
+
       ROWS - 3
     );
 
-  jugador.x = p.x;
-  jugador.y = p.y;
-  jugador.dir = 'arriba';
+
+  jugador.x =
+    p.x;
+
+
+  jugador.y =
+    p.y;
+
+
+  jugador.dir =
+    'arriba';
 }
+
+
+/* =========================================================
+   VICTORIA
+   ========================================================= */
 
 function ganar() {
 
-  juegoActivo = false;
+  juegoActivo =
+    false;
+
+
+  /*
+     Garantiza que la barra
+     llegue exactamente al 100%.
+  */
+
+  cacasComidasNivel =
+    cacasTotalesNivel;
+
+
+  actualizarBarraProgreso();
+
 
   audioMusica.pause();
-  audioMusica.currentTime = 0;
 
-  audioMuerte.pause();
-  audioMuerte.currentTime = 0;
 
-  audioPedoLargo.pause();
-  audioPedoLargo.currentTime = 0;
+  if (
+    audioEventoActivo
+  ) {
 
-  audioCaja.pause();
-  audioCaja.currentTime = 0;
-
-  // Detener evento central
-  eventoCentroActivo = null;
-
-  if (audioEventoActivo) {
     audioEventoActivo.pause();
-    audioEventoActivo.currentTime = 0;
-    audioEventoActivo = null;
+
+    audioEventoActivo.currentTime =
+      0;
+
+    audioEventoActivo =
+      null;
   }
 
-  videoCentro.play().catch(()=>{});
 
-  // Detener sonido de derrota por seguridad
-  audioDerrota.pause();
-  audioDerrota.currentTime = 0;
+  eventoCentroActivo =
+    null;
 
-  const vid =
-    document.getElementById('vidVictoria');
+
+  const video =
+    document.getElementById(
+      'vidVictoria'
+    );
+
 
   document
-    .getElementById('victoria')
-    .classList.remove('oculto');
+    .getElementById(
+      'victoria'
+    )
+    .classList.remove(
+      'oculto'
+    );
 
-  vid.currentTime = 0;
-  vid.volume = 1.0;
-  vid.muted = false;
 
-  vid.play().catch(err => {
+  video.currentTime =
+    0;
 
-    vid.muted = true;
 
-    vid.play().catch(()=>{});
-  });
+  video.play()
+    .catch(() => {});
 }
 
-// ---------- RENDER ----------
+
+/* =========================================================
+   SPRITES
+   ========================================================= */
+
 const FILA_DIR = {
+
   arriba: 0,
+
   derecha: 1,
+
   abajo: 2,
+
   izquierda: 3
 };
 
-function obtenerSpriteFantasma(dir) {
-  switch (dir) {
-    case 'derecha':
-      return imgFantasmaDerecha;
-    case 'izquierda':
-      return imgFantasmaIzquierda;
-    case 'arriba':
-    case 'abajo':
-      return imgFantasmaCentro;
-    default:
-      return imgFantasmaCentro;
+
+function obtenerSpriteFantasma(
+  dir
+) {
+
+  if (
+    dir === 'derecha'
+  ) {
+
+    return imgFantasmaDerecha;
   }
+
+
+  if (
+    dir === 'izquierda'
+  ) {
+
+    return imgFantasmaIzquierda;
+  }
+
+
+  return imgFantasmaCentro;
 }
 
-function dibujarSpriteFantasma(img, ent, frame, tamano = CELL) {
-  const sw = img.width / FANTASMA_COLUMNAS;
-  const sh = img.height / FANTASMA_FILAS;
-  const frameSeguro = ((frame % FANTASMA_FRAMES) + FANTASMA_FRAMES) % FANTASMA_FRAMES;
-  const columna = frameSeguro % FANTASMA_COLUMNAS;
-  const fila = Math.floor(frameSeguro / FANTASMA_COLUMNAS);
-  const sx = columna * sw;
-  const sy = fila * sh;
 
-  ctx.drawImage(img, sx, sy, sw, sh, ent.x - tamano / 2, ent.y - tamano / 2, tamano, tamano);
+function dibujarSpriteFantasma(
+  img,
+  ent,
+  frame,
+  tamano
+) {
+
+  if (
+    !img.complete ||
+    img.naturalWidth <= 0
+  ) return;
+
+
+  const sw =
+    img.width /
+    FANTASMA_COLUMNAS;
+
+
+  const sh =
+    img.height /
+    FANTASMA_FILAS;
+
+
+  const frameSeguro =
+    frame %
+    FANTASMA_FRAMES;
+
+
+  const columna =
+    frameSeguro %
+    FANTASMA_COLUMNAS;
+
+
+  const fila =
+    Math.floor(
+      frameSeguro /
+      FANTASMA_COLUMNAS
+    );
+
+
+  ctx.drawImage(
+
+    img,
+
+    columna * sw,
+
+    fila * sh,
+
+    sw,
+
+    sh,
+
+    ent.x -
+      tamano / 2,
+
+    ent.y -
+      tamano / 2,
+
+    tamano,
+
+    tamano
+  );
 }
+
 
 function dibujarSprite(
   img,
   ent,
   dir,
   frame,
-  tamano = CELL
+  tamano
 ) {
 
-  const filaDir =
+  if (
+    !img.complete ||
+    img.naturalWidth <= 0
+  ) return;
+
+
+  const columnas = 4;
+
+  const filas = 4;
+
+
+  const sw =
+    img.width /
+    columnas;
+
+
+  const sh =
+    img.height /
+    filas;
+
+
+  const fila =
     FILA_DIR[dir] ?? 2;
 
-  const sw = img.width / 4;
-  const sh = img.height / 4;
 
-  const sx = frame * sw;
-  const sy = filaDir * sh;
+  const frameSeguro =
+    frame %
+    columnas;
+
 
   ctx.drawImage(
+
     img,
-    sx,
-    sy,
+
+    frameSeguro * sw,
+
+    fila * sh,
+
     sw,
+
     sh,
-    ent.x - tamano / 2,
-    ent.y - tamano / 2,
+
+    ent.x -
+      tamano / 2,
+
+    ent.y -
+      tamano / 2,
+
     tamano,
+
     tamano
   );
 }
 
-function dibujar(ahora) {
 
-  ctx.fillStyle = COLOR_FONDO;
+/* =========================================================
+   DIBUJAR TODO
+   ========================================================= */
 
-  ctx.fillRect(
-    0,
-    0,
-    canvas.width,
-    canvas.height
-  );
+function dibujar(
+  ahora
+) {
 
-  if (!jugador) return;
+  /*
+     =====================================================
+     FONDO REAL DEL JUEGO
 
-  ctx.strokeStyle = COLOR_PARED;
-  ctx.lineWidth = Math.max(4, CELL * 0.15);
+     AQUÍ SE UTILIZA fondo.png
+     =====================================================
+  */
+
+  if (
+
+    imgFondo.complete &&
+
+    imgFondo.naturalWidth > 0
+
+  ) {
+
+    /*
+       La imagen ocupa TODO el canvas.
+    */
+
+    ctx.drawImage(
+
+      imgFondo,
+
+      0,
+      0,
+
+      canvas.width,
+      canvas.height
+    );
+
+  } else {
+
+    /*
+       Solo se utiliza este color como
+       respaldo mientras fondo.png
+       todavía no terminó de cargar.
+    */
+
+    ctx.fillStyle =
+      COLOR_FONDO;
+
+
+    ctx.fillRect(
+
+      0,
+      0,
+
+      canvas.width,
+      canvas.height
+    );
+  }
+
+
+  if (
+    !jugador
+  ) return;
+
+
+  /* =====================================================
+     BORDE DEL ÁREA DE JUEGO
+     ===================================================== */
+
+  ctx.strokeStyle =
+    COLOR_PARED;
+
+
+  ctx.lineWidth =
+    Math.max(
+      4,
+      CELL * 0.15
+    );
+
 
   ctx.strokeRect(
+
     OFFSET_X,
+
     OFFSET_Y,
+
     CELL * COLS,
+
     CELL * ROWS
   );
 
-  const rect = rectCentro();
 
-  // ==========================================================
-  //  CENTRO: VIDEO O IMAGEN DEL EVENTO
-  // ==========================================================
+  /* =====================================================
+     CENTRO
+     ===================================================== */
 
-  let escalaCentro = 1;
-  if (centroImpactoInicio > 0) {
-    const transcurrido = ahora - centroImpactoInicio;
-    if (transcurrido < CENTRO_IMPACTO_DURACION) {
-      const p = transcurrido / CENTRO_IMPACTO_DURACION;
-      if (p < 0.22) {
-        escalaCentro = 1 + (CENTRO_IMPACTO_ESCALA - 1) * (p / 0.22);
+  const rect =
+    rectCentro();
+
+
+  let escalaCentro =
+    1;
+
+
+  if (
+    centroImpactoInicio > 0
+  ) {
+
+    const transcurrido =
+      ahora -
+      centroImpactoInicio;
+
+
+    if (
+      transcurrido <
+      CENTRO_IMPACTO_DURACION
+    ) {
+
+      const p =
+        transcurrido /
+        CENTRO_IMPACTO_DURACION;
+
+
+      if (
+        p < 0.22
+      ) {
+
+        escalaCentro =
+          1 +
+          (
+            CENTRO_IMPACTO_ESCALA -
+            1
+          ) *
+          (
+            p / 0.22
+          );
+
       } else {
-        const t = (p - 0.22) / 0.78;
-        escalaCentro = 1 + (CENTRO_IMPACTO_ESCALA - 1) * (1 - t * t);
+
+        const t =
+          (
+            p -
+            0.22
+          ) /
+          0.78;
+
+
+        escalaCentro =
+          1 +
+          (
+            CENTRO_IMPACTO_ESCALA -
+            1
+          ) *
+          (
+            1 -
+            t * t
+          );
       }
+
     } else {
-      centroImpactoInicio = 0;
+
+      centroImpactoInicio =
+        0;
     }
   }
 
-  const centroX = rect.x + rect.w / 2;
-  const centroY = rect.y + rect.h / 2;
-  const centroW = rect.w * escalaCentro;
-  const centroH = rect.h * escalaCentro;
-  const centroDrawX = centroX - centroW / 2;
-  const centroDrawY = centroY - centroH / 2;
+
+  const centroX =
+    rect.x +
+    rect.w / 2;
+
+
+  const centroY =
+    rect.y +
+    rect.h / 2;
+
+
+  const centroW =
+    rect.w *
+    escalaCentro;
+
+
+  const centroH =
+    rect.h *
+    escalaCentro;
+
+
+  const centroDrawX =
+    centroX -
+    centroW / 2;
+
+
+  const centroDrawY =
+    centroY -
+    centroH / 2;
+
 
   ctx.save();
-  if (eventoCentroActivo && eventoCentroActivo.img.complete && eventoCentroActivo.img.naturalWidth > 0) {
-    ctx.drawImage(eventoCentroActivo.img, centroDrawX, centroDrawY, centroW, centroH);
-  } else if (videoCentro.readyState >= 2) {
-    ctx.drawImage(videoCentro, centroDrawX, centroDrawY, centroW, centroH);
+
+
+  if (
+
+    eventoCentroActivo &&
+
+    eventoCentroActivo.img.complete &&
+
+    eventoCentroActivo.img.naturalWidth > 0
+
+  ) {
+
+    ctx.drawImage(
+
+      eventoCentroActivo.img,
+
+      centroDrawX,
+
+      centroDrawY,
+
+      centroW,
+
+      centroH
+    );
+
+  } else if (
+    videoCentro.readyState >= 2
+  ) {
+
+    ctx.drawImage(
+
+      videoCentro,
+
+      centroDrawX,
+
+      centroDrawY,
+
+      centroW,
+
+      centroH
+    );
+
   } else {
-    ctx.fillStyle = COLOR_PARED;
-    ctx.fillRect(centroDrawX, centroDrawY, centroW, centroH);
+
+    ctx.fillStyle =
+      COLOR_PARED;
+
+
+    ctx.fillRect(
+
+      centroDrawX,
+
+      centroDrawY,
+
+      centroW,
+
+      centroH
+    );
   }
+
+
   ctx.restore();
 
-  // ---------- CACAS ----------
-  for (const c of cacas) {
 
-    if (c.comida) continue;
+  /* =====================================================
+     CACAS
+     ===================================================== */
 
-    const s = CELL * 0.9;
+  for (
+    const caca of cacas
+  ) {
 
     if (
+      caca.comida
+    ) continue;
+
+
+    const tamano =
+      CELL * 0.9;
+
+
+    if (
+
       imgCaca.complete &&
+
       imgCaca.naturalWidth > 0
+
     ) {
 
       ctx.drawImage(
+
         imgCaca,
-        c.x - s / 2,
-        c.y - s / 2,
-        s,
-        s
+
+        caca.x -
+          tamano / 2,
+
+        caca.y -
+          tamano / 2,
+
+        tamano,
+
+        tamano
       );
 
     } else {
 
-      ctx.fillStyle = '#6b3e1e';
+      ctx.fillStyle =
+        '#6b3e1e';
+
 
       ctx.beginPath();
 
+
       ctx.arc(
-        c.x,
-        c.y,
-        s / 2,
+
+        caca.x,
+
+        caca.y,
+
+        tamano / 2,
+
         0,
+
         Math.PI * 2
       );
+
 
       ctx.fill();
     }
   }
 
-  // ---------- CARAS ----------
-  for (const c of caras) {
 
-    if (c.recogida) continue;
+  /* =====================================================
+     CARAS
+     ===================================================== */
 
-    const s = CELL * 1.5;
+  for (
+    const cara of caras
+  ) {
 
     if (
+      cara.recogida
+    ) continue;
+
+
+    const tamano =
+      CELL * 1.5;
+
+
+    if (
+
       imgCara.complete &&
+
       imgCara.naturalWidth > 0
+
     ) {
 
       ctx.drawImage(
+
         imgCara,
-        c.x - s / 2,
-        c.y - s / 2,
-        s,
-        s
+
+        cara.x -
+          tamano / 2,
+
+        cara.y -
+          tamano / 2,
+
+        tamano,
+
+        tamano
       );
-
-    } else {
-
-      ctx.fillStyle = '#f1c40f';
-
-      ctx.beginPath();
-
-      ctx.arc(
-        c.x,
-        c.y,
-        s / 2,
-        0,
-        Math.PI * 2
-      );
-
-      ctx.fill();
     }
   }
 
-  // ---------- ENEMIGOS ----------
-  const tamPersonaje =
-    CELL * ESCALA_PERSONAJE;
+
+  /* =====================================================
+     ENEMIGOS
+     ===================================================== */
+
+  const tamanoPersonaje =
+    CELL *
+    ESCALA_PERSONAJE;
+
 
   const paralizado =
-    ahora < paralizadoHasta;
+    ahora <
+    paralizadoHasta;
 
-  for (const en of enemigos) {
 
-    const imgFantasma = obtenerSpriteFantasma(en.dir);
+  for (
+    const enemigo of enemigos
+  ) {
+
+    const img =
+      obtenerSpriteFantasma(
+        enemigo.dir
+      );
+
+
+    dibujarSpriteFantasma(
+
+      img,
+
+      enemigo,
+
+      frameEnemigo,
+
+      tamanoPersonaje
+    );
+
 
     if (
-      imgFantasma.complete &&
-      imgFantasma.naturalWidth > 0
+      paralizado
     ) {
 
-      dibujarSpriteFantasma(
-        imgFantasma,
-        en,
-        frameEnemigo,
-        tamPersonaje
-      );
-
-    } else {
-
       ctx.fillStyle =
-        paralizado
-          ? '#3498db'
-          : '#c0392b';
+        'rgba(60,120,255,0.35)';
+
 
       ctx.beginPath();
 
+
       ctx.arc(
-        en.x,
-        en.y,
-        tamPersonaje * 0.4,
+
+        enemigo.x,
+
+        enemigo.y,
+
+        tamanoPersonaje * 0.45,
+
         0,
+
         Math.PI * 2
       );
 
-      ctx.fill();
-    }
-
-    if (paralizado) {
-
-      ctx.fillStyle =
-        'rgba(60,120,255,0.5)';
-
-      ctx.beginPath();
-
-      ctx.arc(
-        en.x,
-        en.y,
-        tamPersonaje * 0.45,
-        0,
-        Math.PI * 2
-      );
 
       ctx.fill();
     }
   }
 
-  // ---------- JUGADOR ----------
-  if (jugador.vivo) {
 
-    if (
-      imgJugador.complete &&
-      imgJugador.naturalWidth > 0
-    ) {
+  /* =====================================================
+     JUGADOR
+     ===================================================== */
 
-      dibujarSprite(
-        imgJugador,
-        jugador,
-        jugador.dir,
-        frameJugador,
-        tamPersonaje
-      );
+  if (
+    jugador.vivo
+  ) {
 
-    } else {
+    dibujarSprite(
 
-      ctx.fillStyle = '#f39c12';
+      imgJugador,
 
-      ctx.beginPath();
+      jugador,
 
-      ctx.arc(
-        jugador.x,
-        jugador.y,
-        tamPersonaje * 0.4,
-        0,
-        Math.PI * 2
-      );
+      jugador.dir,
 
-      ctx.fill();
-    }
+      frameJugador,
+
+      tamanoPersonaje
+    );
   }
 
-  // ---------- BILLETES VOLANDO ----------
-  // Se dibujan al final para que queden por encima del juego.
+
+  /* =====================================================
+     BILLETES
+     ===================================================== */
+
   dibujarBilletes();
 }
 
-// ---------- BUCLE ----------
-function bucle(ahora) {
+
+/* =========================================================
+   BUCLE PRINCIPAL
+   ========================================================= */
+
+function bucle(
+  ahora
+) {
 
   const dtSeg =
     Math.min(
-      (ahora - ultimoMs) / 1000,
+
+      (
+        ahora -
+        ultimoMs
+      ) / 1000,
+
       0.05
     );
 
-  ultimoMs = ahora;
 
-  const dt = dtSeg * 60;
+  ultimoMs =
+    ahora;
+
+
+  const dt =
+    dtSeg * 60;
+
 
   if (
-    ahora - ultimoFrameMs > 120
+    ahora -
+    ultimoFrameMs >
+    120
   ) {
 
     frameJugador =
-      (frameJugador + 1) % 4;
+      (
+        frameJugador + 1
+      ) % 4;
+
 
     frameEnemigo =
-      (frameEnemigo + 1) % FANTASMA_FRAMES;
+      (
+        frameEnemigo + 1
+      ) %
+      FANTASMA_FRAMES;
 
-    ultimoFrameMs = ahora;
+
+    ultimoFrameMs =
+      ahora;
   }
 
-  actualizar(dt, ahora);
-  actualizarBilletes(ahora);
-  dibujar(ahora);
 
-  requestAnimationFrame(bucle);
+  actualizar(
+    dt,
+    ahora
+  );
+
+
+  actualizarBilletes(
+    ahora
+  );
+
+
+  dibujar(
+    ahora
+  );
+
+
+  requestAnimationFrame(
+    bucle
+  );
 }
 
-// ---------- BOTONES ----------
+
+/* =========================================================
+   REINICIAR
+   ========================================================= */
+
 document
-  .getElementById('btnReiniciar')
-  .addEventListener('click', () => {
+  .getElementById(
+    'btnReiniciar'
+  )
+  .addEventListener(
+    'click',
+    () => {
 
-    audioMuerte.pause();
-    audioMuerte.currentTime = 0;
+      audioDerrota.pause();
 
-    audioPedoLargo.pause();
-    audioPedoLargo.currentTime = 0;
+      audioDerrota.currentTime =
+        0;
 
-    audioCaja.pause();
-    audioCaja.currentTime = 0;
 
-    audioDerrota.pause();
-    audioDerrota.currentTime = 0;
+      inicializar();
 
-    if (audioEventoActivo) {
-      audioEventoActivo.pause();
-      audioEventoActivo.currentTime = 0;
-      audioEventoActivo = null;
+
+      ultimoMs =
+        performance.now();
     }
+  );
 
-    eventoCentroActivo = null;
 
-    inicializar();
-
-    ultimoMs = performance.now();
-  });
+/* =========================================================
+   JUGAR OTRA VEZ
+   ========================================================= */
 
 document
-  .getElementById('btnSiguiente')
-  .addEventListener('click', () => {
+  .getElementById(
+    'btnSiguiente'
+  )
+  .addEventListener(
+    'click',
+    () => {
 
-    audioMuerte.pause();
-    audioMuerte.currentTime = 0;
+      const video =
+        document.getElementById(
+          'vidVictoria'
+        );
 
-    audioPedoLargo.pause();
-    audioPedoLargo.currentTime = 0;
 
-    audioCaja.pause();
-    audioCaja.currentTime = 0;
+      video.pause();
 
-    audioDerrota.pause();
-    audioDerrota.currentTime = 0;
+      video.currentTime =
+        0;
 
-    if (audioEventoActivo) {
-      audioEventoActivo.pause();
-      audioEventoActivo.currentTime = 0;
-      audioEventoActivo = null;
+
+      inicializar();
+
+
+      ultimoMs =
+        performance.now();
     }
+  );
 
-    eventoCentroActivo = null;
 
-    const vid =
-      document.getElementById('vidVictoria');
+/* =========================================================
+   BOTÓN JUGAR
+   ========================================================= */
 
-    vid.pause();
-    vid.currentTime = 0;
-
-    inicializar();
-
-    ultimoMs = performance.now();
-  });
-
-// ---------- PANTALLA DE INICIO ----------
 document
-  .getElementById('btnJugar')
-  .addEventListener('click', () => {
+  .getElementById(
+    'btnJugar'
+  )
+  .addEventListener(
+    'click',
+    () => {
 
-    document
-      .getElementById('inicio')
-      .classList.add('oculto');
+      document
+        .getElementById(
+          'inicio'
+        )
+        .classList.add(
+          'oculto'
+        );
 
-    ajustarCanvas();
 
-    ultimoMs = performance.now();
-    ultimoFrameMs = performance.now();
+      inicializar();
 
-    inicializar();
 
-    dibujar(performance.now());
-  });
+      ultimoMs =
+        performance.now();
 
-// ---------- ARRANQUE ----------
+
+      ultimoFrameMs =
+        performance.now();
+    }
+  );
+
+
+/* =========================================================
+   INICIO
+   ========================================================= */
+
 ajustarCanvas();
 
-ultimoMs = performance.now();
-ultimoFrameMs = performance.now();
 
-requestAnimationFrame(bucle);
+ultimoMs =
+  performance.now();
+
+
+ultimoFrameMs =
+  performance.now();
+
+
+actualizarBarraProgreso();
+
+
+requestAnimationFrame(
+  bucle
+);
 
 </script>
+
 </body>
 </html>
-```
